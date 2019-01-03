@@ -8,6 +8,15 @@ with Generative Adversarial Networks](https://arxiv.org/pdf/1703.05192.pdf).
 
 Source git: [DiscoGAN](https://github.com/SKTBrain/DiscoGAN).
 
+Table of Contents
+-------------
+  * [Prerequisites](#prerequisites)
+  * [Installation](#installation)
+  * [Training DiscoGAN](#trainingdiscogan)
+    + [Handbags / Shoes](#h2s)
+    + [Other](#other)
+  * [Outputs](#outputs)
+
 Prerequisites
 -------------
    - Python 3.6
@@ -15,6 +24,12 @@ Prerequisites
    - Numpy/Scipy/Pandas
    - Progressbar
    - OpenCV
+   
+Installation
+-------------
+    $ git clone https://github.com/lpupp/DiscoGAN
+    $ cd DiscoGAN/
+    $ sudo pip3 install -r requirements.txt
 
 Training DiscoGAN
 ----------------
