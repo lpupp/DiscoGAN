@@ -7,7 +7,8 @@ import scipy.io
 
 
 #dataset_path = './datasets/'
-dataset_path = '/Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/'
+#dataset_path = '/Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/'
+dataset_path = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discogan\\datasets'
 
 #celebA_path = os.path.join(dataset_path, 'celebA')
 #facescrub_path = os.path.join(dataset_path, 'facescrub')
@@ -22,12 +23,11 @@ shoe_path = os.path.join(dataset_path, 'edges2shoes')
 table_path = os.path.join(dataset_path, 'furniture/tables')
 seating_path = os.path.join(dataset_path, 'furniture/seating')
 
-
 def shuffle_data(da, db):
-    a_idx = range(len(da))
+    a_idx = list(range(len(da)))
     np.random.shuffle(a_idx)
 
-    b_idx = range(len(db))
+    b_idx = list(range(len(db)))
     np.random.shuffle(b_idx)
 
     shuffled_da = np.array(da)[np.array(a_idx)]
@@ -76,13 +76,13 @@ def get_edge2photo_files(item='edges2handbags', test=False):
     else:
         item_path = os.path.join(item_path, 'train')
 
-    image_paths = map(lambda x: os.path.join(item_path, x), os.listdir(item_path))
+    image_paths = list(map(lambda x: os.path.join(item_path, x), os.listdir(item_path)))
 
     if test:
         return [image_paths, image_paths]
     else:
-        n_images = len(image_paths)
-        return [image_paths[:n_images/2], image_paths[n_images/2:]]
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
 
 def get_furniture_files(item='tables', test=False):
     if item == 'tables':

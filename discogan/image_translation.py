@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN
 parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
 parser.add_argument('--task_name', type=str, default='handbags2shoes', help='Set data name')
 parser.add_argument('--epoch_size', type=int, default=5000, help='Set epoch size')
-parser.add_argument('--batch_size', type=int, default=64, help='Set batch size')
+parser.add_argument('--batch_size', type=int, default=256, help='Set batch size')
 parser.add_argument('--learning_rate', type=float, default=0.0002, help='Set learning rate for optimizer')
 parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
@@ -66,6 +66,7 @@ def get_data():
 
         data_B = np.hstack([data_B_1, data_B_2])
         test_B = np.hstack([test_B_1, test_B_2])
+
     return data_A, data_B, test_A, test_B
 
 def get_fm_loss(real_feats, fake_feats, criterion):
@@ -78,9 +79,9 @@ def get_fm_loss(real_feats, fake_feats, criterion):
     return losses
 
 def get_gan_loss(dis_real, dis_fake, criterion, cuda):
-    labels_dis_real = Variable(torch.ones([dis_real.size()[0], 1]))
-    labels_dis_fake = Variable(torch.zeros([dis_fake.size()[0], 1]))
-    labels_gen = Variable(torch.ones([dis_fake.size()[0], 1]))
+    labels_dis_real = Variable(torch.ones([dis_real.size()[0], 1, 1, 1]))
+    labels_dis_fake = Variable(torch.zeros([dis_fake.size()[0], 1, 1, 1]))
+    labels_gen = Variable(torch.ones([dis_fake.size()[0], 1, 1, 1]))
 
     if cuda:
         labels_dis_real = labels_dis_real.cuda()
@@ -100,6 +101,7 @@ def main():
 
     cuda = args.cuda
     if cuda == 'true':
+        print(cuda)
         cuda = True
     else:
         cuda = False
@@ -133,8 +135,10 @@ def main():
     #    test_A = read_images(test_style_A, None, args.image_size)
     #    test_B = read_images(test_style_B, None, args.image_size)
 
-    test_A = Variable(torch.FloatTensor(test_A), volatile=True)
-    test_B = Variable(torch.FloatTensor(test_B), volatile=True)
+    with torch.no_grad():
+        test_A = Variable(torch.FloatTensor(test_A))
+    with torch.no_grad():
+        test_B = Variable(torch.FloatTensor(test_B))
 
     if not os.path.exists(result_path):
         os.makedirs(result_path)
