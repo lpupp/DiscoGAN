@@ -1,0 +1,11 @@
+name: py2
+dependencies:
+  - python=2.7
+  - numpy
+  - progressbar2
+  - scipy
+  - pandas
+  - pip:
+    - pytorch
+    - opencv
+    - pil
