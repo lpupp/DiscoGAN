@@ -3,3 +3,4 @@ results/*
 *.gz
 *.pyc
 
+.DS_Store
