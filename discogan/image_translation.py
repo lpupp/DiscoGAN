@@ -21,6 +21,7 @@ parser.add_argument('--result_path', type=str, default='./results/', help='Set t
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
+parser.add_argument('--load_iter', type=float, default=-999., help='load iteration suffix')
 
 parser.add_argument('--gan_curriculum', type=int, default=10000, help='Strong GAN loss for certain period at the beginning')
 parser.add_argument('--starting_rate', type=float, default=0.01, help='Set the lambda weight between GAN loss and Recon loss during curriculum period at the beginning. We used the 0.01 weight.')
@@ -111,6 +112,8 @@ def main():
     epoch_size = args.epoch_size
     batch_size = args.batch_size
 
+    to_load = args.load_iter > 0
+
     result_path = os.path.join(args.result_path, args.task_name)
     if args.style_A:
         result_path = os.path.join(result_path, args.style_A)
@@ -123,15 +126,13 @@ def main():
 
     data_style_A, data_style_B, test_style_A, test_style_B = get_data()
 
-    # if args.task_name.startswith('edges2'):
+    #if args.task_name.startswith('edges2'):
     #    test_A = read_images(test_style_A, 'A', args.image_size)
     #    test_B = read_images(test_style_B, 'B', args.image_size)
-
-    # elif args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
-    test_A = read_images(test_style_A, args.image_size)
-    test_B = read_images(test_style_B, args.image_size)
-
-    # else:
+    elif args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
+        test_A = read_images(test_style_A, args.image_size)
+        test_B = read_images(test_style_B, args.image_size)
+    #else:
     #    test_A = read_images(test_style_A, None, args.image_size)
     #    test_B = read_images(test_style_B, None, args.image_size)
 
@@ -145,10 +146,17 @@ def main():
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
-    generator_A = Generator()
-    generator_B = Generator()
-    discriminator_A = Discriminator()
-    discriminator_B = Discriminator()
+    if to_load:
+        ix = str(args.load_iter)
+        generator_A = torch.load(os.path.join(model_path, 'model_gen_A-' + ix))
+        generator_B = torch.load(os.path.join(model_path, 'model_gen_B-' + ix))
+        discriminator_A = torch.load(os.path.join(model_path, 'model_dis_A-' + ix))
+        discriminator_B = torch.load(os.path.join(model_path, 'model_dis_B-' + ix))
+    else:
+        generator_A = Generator()
+        generator_B = Generator()
+        discriminator_A = Discriminator()
+        discriminator_B = Discriminator()
 
     if cuda:
         test_A = test_A.cuda()

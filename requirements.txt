@@ -1,0 +1,12 @@
+keras==2.2.0
+#git+https://www.github.com/keras-team/keras-contrib.git
+git+https://github.com/keras-team/keras contrib.git@4d48c687433c53a3495357e99cb059ede74e7f02 -U
+matplotlib
+numpy
+scipy
+pillow
+#urllib
+#skimage
+scikit-image
+#gzip
+#pickle
