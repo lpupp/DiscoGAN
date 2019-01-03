@@ -1,6 +1,9 @@
 models/*
 results/*
+datasets/*
+
 *.gz
 *.pyc
+__pycache__/
 
 .DS_Store
