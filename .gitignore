@@ -2,6 +2,10 @@ models/*
 results/*
 datasets/*
 
+*.json
+*.h5
+*.hdf5
+
 *.gz
 *.pyc
 __pycache__/
