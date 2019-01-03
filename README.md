@@ -55,5 +55,5 @@ To train handbags2shoes or shoes2handbags (identical), set task_name
 TBC...
 
 Outputs
-=============
+-------------
 All example results show x_A, x_AB, x_ABA and x_B, x_BA, x_BAB
