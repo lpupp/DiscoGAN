@@ -2,11 +2,9 @@ DiscoGAN
 =========================================
 
 Python 3.6 compatible DiscoGAN. Currently all applications other than handbags2shoes have been removed.
-
-Source paper: [Learning to Discover Cross-Domain Relations
+  * Source paper: [Learning to Discover Cross-Domain Relations
 with Generative Adversarial Networks](https://arxiv.org/pdf/1703.05192.pdf).
-
-Source git: [DiscoGAN](https://github.com/SKTBrain/DiscoGAN).
+  * Source git: [DiscoGAN](https://github.com/SKTBrain/DiscoGAN).
 
 Table of Contents
 -------------
