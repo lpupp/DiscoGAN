@@ -101,14 +101,17 @@ def get_furniture_files(item='tables', test=False):
         item_files = [row[0] for row in csv.reader(f, delimiter='\n')]
 
     if test:
-        item_files = item_files[int(len(item_files) * 0.8):]
+        #item_files = item_files[int(len(item_files) * 0.9):]
+        item_files = item_files[-400:]
     else:
-        item_files = item_files[:int(len(item_files) * 0.8)]
+        #item_files = item_files[:int(len(item_files) * 0.9)]
+        item_files = item_files[:len(item_files) - 400]
 
-    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(*(x.split('/')[-1]))), item_files))
+    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(x.split('/')[-1])), item_files))
 
     if test:
-        return [image_paths, image_paths]
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
     else:
         n_slice = int(len(image_paths)/2)
         return [image_paths[:n_slice], image_paths[n_slice:]]

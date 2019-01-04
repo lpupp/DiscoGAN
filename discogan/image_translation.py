@@ -279,6 +279,7 @@ def main():
                 print("DIS Loss:", as_np(dis_loss_A.mean()), as_np(dis_loss_B.mean()))
 
             if iters % args.image_save_interval == 0:
+                print(test_A.shape)
                 AB = generator_B(test_A)
                 BA = generator_A(test_B)
                 ABA = generator_A(AB)
