@@ -1,4 +1,5 @@
 import os
+import csv
 import cv2
 import numpy as np
 import pandas as pd
@@ -20,8 +21,9 @@ dataset_path = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discog
 handbag_path = os.path.join(dataset_path, 'edges2handbags')
 shoe_path = os.path.join(dataset_path, 'edges2shoes')
 
-table_path = os.path.join(dataset_path, 'furniture/tables')
-seating_path = os.path.join(dataset_path, 'furniture/seating')
+furniture_path = os.path.join(dataset_path, 'furniture')
+table_files = os.path.join(furniture_path, 'tables_to_keep.txt')
+seating_files = os.path.join(furniture_path, 'seating_to_keep.txt')
 
 def shuffle_data(da, db):
     a_idx = list(range(len(da)))
@@ -85,20 +87,24 @@ def get_edge2photo_files(item='edges2handbags', test=False):
         return [image_paths[:n_slice], image_paths[n_slice:]]
 
 def get_furniture_files(item='tables', test=False):
+    item_path = furniture_path
     if item == 'tables':
-        item_path = table_path
+        item_files_ = table_files
     elif item == 'seating':
-        item_path = seating_path
+        item_files_ = seating_files
+
+    with open(item_files_, 'r') as f:
+        item_files = [row[0] for row in csv.reader(f, delimiter='\n')]
 
     if test:
-        pass
+        item_files = item_files[int(len(item_files) * 0.8):]
     else:
-        pass
+        item_files = item_files[:int(len(item_files) * 0.8)]
 
-    image_paths = map(lambda x: os.path.join(item_path, x), os.listdir(item_path))
+    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(*(x.split(os.path.sep)[1:]))), item_files))
 
     if test:
         return [image_paths, image_paths]
     else:
-        n_images = len(image_paths)
-        return [image_paths[:n_images/2], image_paths[n_images/2:]]
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
