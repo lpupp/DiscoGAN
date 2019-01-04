@@ -102,7 +102,6 @@ def main():
 
     cuda = args.cuda
     if cuda == 'true':
-        print(cuda)
         cuda = True
     else:
         cuda = False
@@ -113,6 +112,7 @@ def main():
     batch_size = args.batch_size
 
     to_load = args.load_iter > 0
+    load_iter = args.load_iter * to_load
 
     result_path = os.path.join(args.result_path, args.task_name)
     if args.style_A:
@@ -129,9 +129,9 @@ def main():
     #if args.task_name.startswith('edges2'):
     #    test_A = read_images(test_style_A, 'A', args.image_size)
     #    test_B = read_images(test_style_B, 'B', args.image_size)
-    elif args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
-        test_A = read_images(test_style_A, args.image_size)
-        test_B = read_images(test_style_B, args.image_size)
+    #elif args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
+    test_A = read_images(test_style_A, args.image_size)
+    test_B = read_images(test_style_B, args.image_size)
     #else:
     #    test_A = read_images(test_style_A, None, args.image_size)
     #    test_B = read_images(test_style_B, None, args.image_size)
@@ -310,10 +310,10 @@ def main():
                     scipy.misc.imsave(filename_prefix + '.BAB.jpg', BAB_val.astype(np.uint8)[:,:,::-1])
 
             if iters % args.model_save_interval == 0:
-                torch.save(generator_A, os.path.join(model_path, 'model_gen_A-' + str(iters / args.model_save_interval)))
-                torch.save(generator_B, os.path.join(model_path, 'model_gen_B-' + str(iters / args.model_save_interval)))
-                torch.save(discriminator_A, os.path.join(model_path, 'model_dis_A-' + str(iters / args.model_save_interval)))
-                torch.save(discriminator_B, os.path.join(model_path, 'model_dis_B-' + str(iters / args.model_save_interval)))
+                torch.save(generator_A, os.path.join(model_path, 'model_gen_A-' + str((iters / args.model_save_interval) + load_iter)))
+                torch.save(generator_B, os.path.join(model_path, 'model_gen_B-' + str((iters / args.model_save_interval) + load_iter)))
+                torch.save(discriminator_A, os.path.join(model_path, 'model_dis_A-' + str((iters / args.model_save_interval) + load_iter)))
+                torch.save(discriminator_B, os.path.join(model_path, 'model_dis_B-' + str((iters / args.model_save_interval) + load_iter)))
 
             iters += 1
 
