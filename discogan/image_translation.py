@@ -117,12 +117,12 @@ def main():
     result_path = os.path.join(args.result_path, args.task_name)
     if args.style_A:
         result_path = os.path.join(result_path, args.style_A)
-    result_path = os.path.join(result_path, args.model_arch)
+    result_path = os.path.join(result_path, args.model_arch + args.task_name)
 
     model_path = os.path.join(args.model_path, args.task_name)
     if args.style_A:
         model_path = os.path.join(model_path, args.style_A)
-    model_path = os.path.join(model_path, args.model_arch)
+    model_path = os.path.join(model_path, args.model_arch + args.task_name)
 
     data_style_A, data_style_B, test_style_A, test_style_B = get_data()
 
