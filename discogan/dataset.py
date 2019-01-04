@@ -9,7 +9,8 @@ import scipy.io
 
 #dataset_path = './datasets/'
 #dataset_path = '/Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/'
-dataset_path = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discogan\\datasets'
+dataset_path_1 = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discogan\\datasets'
+dataset_path_2 = 'C:\\Users\\lucag\\Dropbox\\GAN\\furniture'
 
 #celebA_path = os.path.join(dataset_path, 'celebA')
 #facescrub_path = os.path.join(dataset_path, 'facescrub')
@@ -18,12 +19,13 @@ dataset_path = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discog
 #face_real_path = os.path.join(dataset_path, 'real_face')
 #car_path = os.path.join(dataset_path, 'data', 'cars')
 
-handbag_path = os.path.join(dataset_path, 'edges2handbags')
-shoe_path = os.path.join(dataset_path, 'edges2shoes')
+handbag_path = os.path.join(dataset_path_1, 'edges2handbags')
+shoe_path = os.path.join(dataset_path_1, 'edges2shoes')
 
-furniture_path = os.path.join(dataset_path, 'furniture')
-table_files = os.path.join(furniture_path, 'tables_to_keep.txt')
-seating_files = os.path.join(furniture_path, 'seating_to_keep.txt')
+tables_path = os.path.join(dataset_path_2, 'tables')
+seating_path = os.path.join(dataset_path_2, 'seating')
+table_files = os.path.join(dataset_path_2, 'tables_to_keep.txt')
+seating_files = os.path.join(dataset_path_2, 'seating_to_keep.txt')
 
 def shuffle_data(da, db):
     a_idx = list(range(len(da)))
@@ -86,12 +88,14 @@ def get_edge2photo_files(item='edges2handbags', test=False):
         n_slice = int(len(image_paths)/2)
         return [image_paths[:n_slice], image_paths[n_slice:]]
 
+
 def get_furniture_files(item='tables', test=False):
-    item_path = furniture_path
     if item == 'tables':
         item_files_ = table_files
+        item_path = tables_path
     elif item == 'seating':
         item_files_ = seating_files
+        item_path = seating_path
 
     with open(item_files_, 'r') as f:
         item_files = [row[0] for row in csv.reader(f, delimiter='\n')]
@@ -101,7 +105,7 @@ def get_furniture_files(item='tables', test=False):
     else:
         item_files = item_files[:int(len(item_files) * 0.8)]
 
-    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(*(x.split(os.path.sep)[1:]))), item_files))
+    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(*(x.split('/')[-1]))), item_files))
 
     if test:
         return [image_paths, image_paths]
