@@ -1,6 +1,7 @@
 models/*
 results/*
 datasets/*
+tmp
 
 *.json
 *.h5
