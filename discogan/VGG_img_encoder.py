@@ -60,7 +60,7 @@ for target in range(n):
     cossim.setdefault(target, [])
     for i in range(n):
         cossim[target].append(cos_sim(img_embed[target], img_embed[i]))
-    
+
     top2 = np.array(cossim[target]).argsort()[-2:][::-1]
     top1 = top2[top2 != target]
     amax[target] = top1.item()
@@ -125,3 +125,35 @@ img_ = skimage.measure.block_reduce(imgs[i], (2, 2, 1), np.max)
 img_trans = g_BA.predict(np.expand_dims(img_, axis=0))
 plt.imshow(np.concatenate((img_, img_trans[0]), axis=1))
 
+
+#%% PLOT RESULTS --------------------------------------------------------------
+
+#import os
+from glob import glob
+import scipy.misc
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+n = 21
+
+data_type = 'train'
+dataset = 'edges2handbags'
+
+path = glob('../Keras-GAN/datasets/%s/%s/*' % (dataset, data_type))
+
+#%% Load n images
+imgs = []
+for i in range(n):
+    img = scipy.misc.imread(path[i], mode='RGB').astype(np.float)
+    img = img/127.5 - 1
+    imgs.append(img)
+
+imgs = np.stack(imgs)
+input_imgs = imgs[:3]
+trans_imgs = imgs[3:6]
+trans_imgs = imgs[6:]
+
+#%% Display highest similarity matches for image i
+
+plt.imshow(np.concatenate((imgs[k[i]], imgs[v[i]]), axis=1))
