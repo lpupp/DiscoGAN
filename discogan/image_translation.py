@@ -41,6 +41,7 @@ parser.add_argument('--model_save_interval', type=int, default=10000, help='Save
 def as_np(data):
     return data.cpu().data.numpy()
 
+
 def get_data():
     if args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
         data_A_1, data_A_2 = get_edge2photo_files(item='edges2handbags', test=False)
@@ -70,6 +71,7 @@ def get_data():
 
     return data_A, data_B, test_A, test_B
 
+
 def get_fm_loss(real_feats, fake_feats, criterion):
     losses = 0
     for real_feat, fake_feat in zip(real_feats, fake_feats):
@@ -78,6 +80,7 @@ def get_fm_loss(real_feats, fake_feats, criterion):
         losses += loss
 
     return losses
+
 
 def get_gan_loss(dis_real, dis_fake, criterion, cuda):
     labels_dis_real = Variable(torch.ones([dis_real.size()[0], 1, 1, 1]))
