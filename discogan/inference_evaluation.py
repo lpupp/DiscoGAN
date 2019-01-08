@@ -1,5 +1,6 @@
 import os
 import argparse
+import math
 from itertools import chain
 
 import torch
@@ -19,12 +20,12 @@ import scipy
 #import sklearn.metrics.pairwise.cosine_similarity as cosine_similarity
 #import scipy.spatial.distance.euclidean as euclidean_distance
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
 
-parser.add_argument('--task_name', type=str, default='handbags2shoes', help='Set data name')
+parser.add_argument('--task_name', type=str, default='shoes2handbags', help='Set data name')
 #parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
 parser.add_argument('--top5_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
@@ -35,7 +36,7 @@ parser.add_argument('--embedding_encoder', type=str, default='vgg16', help='choo
 #parser.add_argument('--similarity_metric', type=str, default='cosine', help='choose among cosine/euclidean similarity metrics.')
 
 # TODO (lpupp) remove. bad idea -- loads all of the nets
-# txt2model = {'alexnet': models.alexnet(pretrained=True),
+#txt2model = {'alexnet': models.alexnet(pretrained=True),
 #              'vgg11': models.vgg11(pretrained=True),
 #              'vgg13': models.vgg13(pretrained=True),
 #              'vgg16': models.vgg16(pretrained=True),
@@ -77,7 +78,8 @@ def main():
     # TODO (lpupp) do this in general
     #embedding_encoder, enc_input_size = initialize_model(args.embedding_encoder)
     print('loading model. embedding_encoder {}'.format(args.embedding_encoder))
-    embedding_encoder = txt2model[args.embedding_encoder]
+    embedding_encoder = models.vgg19(pretrained=True)
+    #embedding_encoder = txt2model[args.embedding_encoder]
     set_parameter_requires_grad(embedding_encoder, feature_extracting=True)
     embedding_encoder = nn.Sequential(
             *list(embedding_encoder.features.children())[:-1],
@@ -101,7 +103,7 @@ def main():
     print('model_path {}'.format(model_path))
     print('top5_path {}'.format(top5_path))
 
-    _, _, test_style_A, test_style_B = get_data()
+    _, _, test_style_A, test_style_B = get_data(args)
 
     print('Reading images')
     test_A = read_images(test_style_A, args.image_size)
@@ -175,18 +177,34 @@ def main():
     with torch.no_grad():
         BA_enc = Variable(torch.FloatTensor(BA_enc))
 
+    if cuda:
+        A_enc = A_enc.cuda()
+        B_enc = B_enc.cuda()
+        AB_enc = AB_enc.cuda()
+        BA_enc = BA_enc.cuda()
+
     # TODO (lpupp) batch
     # TODO (lpupp) im getting pretty weird outputs
     # Encode all translated images (A, B, AB and BA)
     print('Encoding images --------------')
+    def mb_eval(data, enc, mb=32):
+        out = []
+        for i in range(math.ceil(data.shape[0]/mb)):
+            out.append(enc(data[i*mb:(i+1)*mb]))
+        return torch.cat(out, dim=0)
+
     print('A')
-    A_encoded = embedding_encoder(A_enc)
+    A_encoded = mb_eval(A_enc, embedding_encoder)
+    print(A_encoded.shape)
     print('B')
-    B_encoded = embedding_encoder(B_enc)
+    B_encoded = mb_eval(B_enc, embedding_encoder)
+    print(B_encoded.shape)
     print('AB')
-    AB_encoded = embedding_encoder(AB_enc)
+    AB_encoded = mb_eval(AB_enc, embedding_encoder)
+    print(AB_encoded.shape)
     print('BA')
-    BA_encoded = embedding_encoder(BA_enc)
+    BA_encoded = mb_eval(BA_enc, embedding_encoder)
+    print(BA_encoded.shape)
     # TODO (lpupp) Could output this to csv...
 
     # #########################################################################
@@ -197,10 +215,18 @@ def main():
 
     # For each translation (AB and BA) find top 5 similarity (in B and A resp.)
     print('find_top_n_similar --------------')
+    print('AB')
     AB_similar = find_top_n_similar(AB_encoded, B_encoded, n=5)
+    print('BA')
     BA_similar = find_top_n_similar(BA_encoded, A_encoded, n=5)
 
     # Plot results nicely
     print('plot --------------')
+    print('AB')
     plot_all_outputs(AB_similar, [A, AB, B], src_style='A', path=top5_path)
+    print('BA')
     plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=top5_path)
+
+
+if __name__=="__main__":
+    main()

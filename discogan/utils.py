@@ -139,11 +139,11 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
 
     #img_tran = as_np(trans[img_ix]).transpose(1, 2, 0)
     #img_tran = cv2.resize(img_tran, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
-    img_tran = img_tran[img_ix].transpose(1, 2, 0)
+    img_tran = trans[img_ix].transpose(1, 2, 0)
 
     #imgs_comp = as_np(comp[similar_ix])
     #imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(imgs_comp.shape[0])]
-    imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(comp[similar_ix].shape[0])]
+    imgs_comp = [comp[i].transpose(1, 2, 0) for i in similar_ix]
 
     img_out = np.hstack((img_orig, img_tran, *imgs_comp))
 

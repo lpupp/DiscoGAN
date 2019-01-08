@@ -16,7 +16,7 @@ def img4save(data):
     return data_.astype(np.uint8)[:, :, ::-1]
 
 
-def get_data():
+def get_data(args):
     if args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
         data_A_1, data_A_2 = get_edge2photo_files(item='edges2handbags', test=False)
         test_A_1, test_A_2 = get_edge2photo_files(item='edges2handbags', test=True)
