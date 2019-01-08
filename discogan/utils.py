@@ -127,24 +127,25 @@ def initialize_model(model_name, num_classes=None):
     return model_ft, input_size
 
 
-def plot_outputs(img_ix, similar_ix, src_style='A', path=None):
+def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
     similar_ix.reverse()
-    if src_style == 'A':
-        orig, trans, comp = A, AB, B
-    elif src_style == 'B':
-        orig, trans, comp = A, BA, B
+    if len(imgs) == 3:
+        orig, trans, comp = imgs
     else:
         raise ValueError
 
-    img_orig = as_np(orig[img_ix]).transpose(1, 2, 0)
+    #img_orig = as_np(orig[img_ix]).transpose(1, 2, 0)
+    img_orig = orig[img_ix].transpose(1, 2, 0)
 
-    img_tran = as_np(trans[img_ix]).transpose(1, 2, 0)
-    img_tran = cv2.resize(img_tran, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
+    #img_tran = as_np(trans[img_ix]).transpose(1, 2, 0)
+    #img_tran = cv2.resize(img_tran, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
+    img_tran = img_tran[img_ix].transpose(1, 2, 0)
 
-    img_recom = as_np(comp[similar_ix])
-    img_recom = [img_recom[i].transpose(1, 2, 0) for i in range(img_recom.shape[0])]
+    #imgs_comp = as_np(comp[similar_ix])
+    #imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(imgs_comp.shape[0])]
+    imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(comp[similar_ix].shape[0])]
 
-    img_out = np.hstack((img_orig, img_tran, *img_recom))
+    img_out = np.hstack((img_orig, img_tran, *imgs_comp))
 
     if path is not None:
         filename = str(img_ix) + src_style + '.jpg'
@@ -154,8 +155,8 @@ def plot_outputs(img_ix, similar_ix, src_style='A', path=None):
     return img_out
 
 
-def plot_all_outputs(similar_ixs, src_style='A', path=None):
+def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None):
     out = []
     for i in similar_ixs:
-        out.append(plot_outputs(i, similar_ixs[i], src_style, path))
+        out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path))
     return out

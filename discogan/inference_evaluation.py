@@ -72,9 +72,11 @@ def main():
     else:
         cuda = False
 
+    print('cuda: {}'.format(cuda))
+
     # TODO (lpupp) do this in general
     #embedding_encoder, enc_input_size = initialize_model(args.embedding_encoder)
-
+    print('loading model. embedding_encoder {}'.format(args.embedding_encoder))
     embedding_encoder = txt2model[args.embedding_encoder]
     set_parameter_requires_grad(embedding_encoder, feature_extracting=True)
     embedding_encoder = nn.Sequential(
@@ -96,10 +98,15 @@ def main():
     if not os.path.exists(top5_path):
         os.makedirs(top5_path)
 
+    print('model_path {}'.format(model_path))
+    print('top5_path {}'.format(top5_path))
+
     _, _, test_style_A, test_style_B = get_data()
 
+    print('Reading images')
     test_A = read_images(test_style_A, args.image_size)
     test_B = read_images(test_style_B, args.image_size)
+    n_A_img, n_B_img = test_A.shape[0], test_B.shape[0]
 
     with torch.no_grad():
         test_A = Variable(torch.FloatTensor(test_A))
@@ -110,62 +117,76 @@ def main():
         test_A = test_A.cuda()
         test_B = test_B.cuda()
 
+    print('Loading generator')
     ix = str(args.load_iter)
     generator_A = torch.load(os.path.join(model_path, 'model_gen_A-' + ix))
     generator_B = torch.load(os.path.join(model_path, 'model_gen_B-' + ix))
 
     # translate all images (A and B)
+    print('Translating images ---------')
+    print('A to B')
     AB = generator_B(test_A)
+    print('B to A')
     BA = generator_A(test_B)
 
     # Up to here is fine!!!!!!!! ##############################################
     # #########################################################################
     # TODO(lpupp) Below here is not fine!!!!!!!! ##############################
+    # The problem is the transform crap
+    # Why do I need the transform stuff? because the encoder dimension expects
+    # a different sized input.
 
     # Normalize all inputs to embedding_encoder
-    normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                 std=[0.229, 0.224, 0.225])
-    tfs = torchvision.transforms.Compose([
-            torchvision.transforms.ToPILImage(),
-            torchvision.transforms.Resize((enc_input_size, enc_input_size), interpolation=2),
-            torchvision.transforms.ToTensor(),
-            normalize
-            ])
+    dsize = (enc_input_size, enc_input_size)
+    #normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                                             std=[0.229, 0.224, 0.225])
+    #tfs = torchvision.transforms.Compose([
+    #        torchvision.transforms.ToPILImage(),
+    #        torchvision.transforms.Resize(dsize, interpolation=2),
+    #        torchvision.transforms.ToTensor(),
+    #        normalize
+    #        ])
 
     # TODO (lpupp) Is there a way around this song and dance?
-    A_, B_, AB_, BA_ = [], [], [], []
-    AB, BA = as_np(AB), (BA)
+    A_enc, B_enc, AB_enc, BA_enc = [], [], [], []
     A, B, AB, BA = as_np(test_A), as_np(test_B), as_np(AB), as_np(BA)
-    for i in range(A.shape[0]):
-        A_.append(tfs(A[i].astype(np.uint8)))
-    for i in range(B.shape[0]):
-        B_.append(tfs(B[i].astype(np.uint8)))
-    for i in range(AB.shape[0]):
-        AB_.append(tfs(AB[i].astype(np.uint8)))
-    for i in range(BA.shape[0]):
-        BA_.append(tfs(BA[i].astype(np.uint8)))
 
-    A = np.stack(A)
-    B = np.stack(B)
-    AB = np.stack(AB_)
-    BA = np.stack(BA_)
+    print('Converting and resizing image tensors to numpy')
+    for i in range(n_A_img):
+        #A_enc.append(tfs(A[i].astype(np.uint8)))
+        A_enc.append(cv2.resize(A[i].transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC))
+        AB_enc.append(cv2.resize(AB[i].transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC))
+    for i in range(n_B_img):
+        #B_enc.append(tfs(B[i].astype(np.uint8)))
+        B_enc.append(cv2.resize(B[i].transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC))
+        BA_enc.append(cv2.resize(BA[i].transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC))
+
+    A_enc = np.stack(A_enc).transpose(0, 3, 1, 2)
+    B_enc = np.stack(B_enc).transpose(0, 3, 1, 2)
+    AB_enc = np.stack(AB_enc).transpose(0, 3, 1, 2)
+    BA_enc = np.stack(BA_enc).transpose(0, 3, 1, 2)
 
     with torch.no_grad():
-        A = Variable(torch.FloatTensor(A))
+        A_enc = Variable(torch.FloatTensor(A_enc))
     with torch.no_grad():
-        B = Variable(torch.FloatTensor(B))
+        B_enc = Variable(torch.FloatTensor(B_enc))
     with torch.no_grad():
-        AB = Variable(torch.FloatTensor(AB))
+        AB_enc = Variable(torch.FloatTensor(AB_enc))
     with torch.no_grad():
-        BA = Variable(torch.FloatTensor(BA))
+        BA_enc = Variable(torch.FloatTensor(BA_enc))
 
     # TODO (lpupp) batch
     # TODO (lpupp) im getting pretty weird outputs
     # Encode all translated images (A, B, AB and BA)
-    A_encoded = embedding_encoder(A)
-    B_encoded = embedding_encoder(B)
-    AB_encoded = embedding_encoder(AB)
-    BA_encoded = embedding_encoder(BA)
+    print('Encoding images --------------')
+    print('A')
+    A_encoded = embedding_encoder(A_enc)
+    print('B')
+    B_encoded = embedding_encoder(B_enc)
+    print('AB')
+    AB_encoded = embedding_encoder(AB_enc)
+    print('BA')
+    BA_encoded = embedding_encoder(BA_enc)
     # TODO (lpupp) Could output this to csv...
 
     # #########################################################################
@@ -175,9 +196,11 @@ def main():
     # Below here should be fine but needs to be tested
 
     # For each translation (AB and BA) find top 5 similarity (in B and A resp.)
+    print('find_top_n_similar --------------')
     AB_similar = find_top_n_similar(AB_encoded, B_encoded, n=5)
     BA_similar = find_top_n_similar(BA_encoded, A_encoded, n=5)
 
     # Plot results nicely
-    plot_all_outputs(AB_similar, src_style='A', path=top5_path)
-    plot_all_outputs(BA_similar, src_style='B', path=top5_path)
+    print('plot --------------')
+    plot_all_outputs(AB_similar, [A, AB, B], src_style='A', path=top5_path)
+    plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=top5_path)
