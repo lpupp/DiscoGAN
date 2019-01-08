@@ -28,8 +28,9 @@ parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
 parser.add_argument('--task_name', type=str, default='shoes2handbags', help='Set data name')
 #parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
-parser.add_argument('--top5_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
+parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 parser.add_argument('--load_iter', type=float, help='load iteration suffix')
+parser.add_argument('--topn', type=int, defaults=5, help='load iteration suffix')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--embedding_encoder', type=str, default='vgg16', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models.')
@@ -95,13 +96,13 @@ def main():
     model_path = os.path.join(args.model_path, args.task_name)
     model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
 
-    top5_path = os.path.join(args.top5_path, args.task_name)
-    top5_path = os.path.join(top5_path, args.model_arch + str(args.image_size))
-    if not os.path.exists(top5_path):
-        os.makedirs(top5_path)
+    topn_path = os.path.join(args.topn_path, args.task_name)
+    topn_path = os.path.join(topn_path, args.model_arch + str(args.image_size))
+    if not os.path.exists(topn_path):
+        os.makedirs(topn_path)
 
     print('model_path {}'.format(model_path))
-    print('top5_path {}'.format(top5_path))
+    print('topn_path {}'.format(topn_path))
 
     _, _, test_style_A, test_style_B = get_data(args)
 
@@ -216,16 +217,16 @@ def main():
     # For each translation (AB and BA) find top 5 similarity (in B and A resp.)
     print('find_top_n_similar --------------')
     print('AB')
-    AB_similar = find_top_n_similar(AB_encoded, B_encoded, n=5)
+    AB_similar = find_top_n_similar(AB_encoded, B_encoded, n=args.topn)
     print('BA')
-    BA_similar = find_top_n_similar(BA_encoded, A_encoded, n=5)
+    BA_similar = find_top_n_similar(BA_encoded, A_encoded, n=args.topn)
 
     # Plot results nicely
     print('plot --------------')
     print('AB')
-    plot_all_outputs(AB_similar, [A, AB, B], src_style='A', path=top5_path)
+    plot_all_outputs(AB_similar, [A, AB, B], src_style='A', path=topn_path)
     print('BA')
-    plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=top5_path)
+    plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=topn_path)
 
 
 if __name__=="__main__":

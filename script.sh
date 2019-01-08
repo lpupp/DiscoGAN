@@ -16,5 +16,7 @@ python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rat
 # Run Tables2Chairs
 python ./discogan/image_translation.py --task_name=tables2chairs --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000
 
-# Run Chairs2Tables
-# python ./discogan/image_translation.py --task_name='chairs2tables' --batch_size=500
+# Run eval
+./discogan/inference_evaluation.py --task_name shoes2handbags --load_iter 18.0 --embedding_encoder vgg19
+
+./discogan/inference_evaluation.py --task_name tables2chairs --load_iter 23.0 --embedding_encoder vgg19
