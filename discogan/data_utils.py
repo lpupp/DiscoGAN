@@ -32,7 +32,7 @@ paths = {'handbags': os.path.join(fashion_path, 'handbags'),
          'shoes': os.path.join(fashion_path, 'shoes'),
          'belts': os.path.join(fashion_path, 'belts'),
          'tables': os.path.join(furniture_path, 'tables'),
-         'chairs': os.path.join(furniture_path, 'seating'),
+         'seating': os.path.join(furniture_path, 'seating'),
          'storage': os.path.join(furniture_path, 'storage'),
          'carpets': os.path.join(furniture_path, 'carpets')}
 
