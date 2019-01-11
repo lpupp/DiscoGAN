@@ -7,6 +7,13 @@ conda install -n py2 -c anaconda pil
 
 activate py2
 
+#python data_processing.py /Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/fashion/belts pad
+#python data_processing.py /Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/fashion/belts sample
+
+# TODO(lpupp) I first need to select only those with white background
+#python data_processing.py /Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/furniture/storage sample
+
+
 # Run Shoes2Handbags
 python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000
 
