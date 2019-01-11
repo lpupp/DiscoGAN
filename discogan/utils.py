@@ -34,10 +34,6 @@ def find_top_n_similar_by_img(embed, db_embeds, n=1):
     return sorted(list(range(len(sim))), key=lambda i: sim[i])[-n:]
 
 
-def as_np(data):
-    return data.cpu().data.numpy()
-
-
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():

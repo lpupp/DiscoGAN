@@ -10,7 +10,7 @@ import torch.optim as optim
 import torchvision.models as models
 from torch.autograd import Variable
 
-from dataset import *
+#from dataset import *
 from model import *
 from utils import *
 from data_utils import *
@@ -229,5 +229,5 @@ def main():
     plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=topn_path)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

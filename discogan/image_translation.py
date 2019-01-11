@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-from dataset import *
+#from dataset import *
+from data_utils import *
 from model import *
 import scipy
 from progressbar import ETA, Bar, Percentage, ProgressBar
@@ -37,39 +38,39 @@ parser.add_argument('--update_interval', type=int, default=3, help='')
 parser.add_argument('--log_interval', type=int, default=50, help='Print loss values every log_interval iterations.')
 parser.add_argument('--image_save_interval', type=int, default=1000, help='Save test results every image_save_interval iterations.')
 parser.add_argument('--model_save_interval', type=int, default=10000, help='Save models every model_save_interval iterations.')
-
-def as_np(data):
-    return data.cpu().data.numpy()
-
-
-def get_data():
-    if args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
-        data_A_1, data_A_2 = get_edge2photo_files(item='edges2handbags', test=False)
-        test_A_1, test_A_2 = get_edge2photo_files(item='edges2handbags', test=True)
-
-        data_A = np.hstack([data_A_1, data_A_2])
-        test_A = np.hstack([test_A_1, test_A_2])
-
-        data_B_1, data_B_2 = get_edge2photo_files(item='edges2shoes', test=False)
-        test_B_1, test_B_2 = get_edge2photo_files(item='edges2shoes', test=True)
-
-        data_B = np.hstack([data_B_1, data_B_2])
-        test_B = np.hstack([test_B_1, test_B_2])
-
-    elif args.task_name == 'tables2chairs' or args.task_name == 'chairs2tables':
-        data_A_1, data_A_2 = get_furniture_files(item='tables', test=False)
-        test_A_1, test_A_2 = get_furniture_files(item='tables', test=True)
-
-        data_A = np.hstack([data_A_1, data_A_2])
-        test_A = np.hstack([test_A_1, test_A_2])
-
-        data_B_1, data_B_2 = get_furniture_files(item='seating', test=False)
-        test_B_1, test_B_2 = get_furniture_files(item='seating', test=True)
-
-        data_B = np.hstack([data_B_1, data_B_2])
-        test_B = np.hstack([test_B_1, test_B_2])
-
-    return data_A, data_B, test_A, test_B
+#
+# def as_np(data):
+#     return data.cpu().data.numpy()
+#
+#
+# def get_data():
+#     if args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
+#         data_A_1, data_A_2 = get_edge2photo_files(item='edges2handbags', test=False)
+#         test_A_1, test_A_2 = get_edge2photo_files(item='edges2handbags', test=True)
+#
+#         data_A = np.hstack([data_A_1, data_A_2])
+#         test_A = np.hstack([test_A_1, test_A_2])
+#
+#         data_B_1, data_B_2 = get_edge2photo_files(item='edges2shoes', test=False)
+#         test_B_1, test_B_2 = get_edge2photo_files(item='edges2shoes', test=True)
+#
+#         data_B = np.hstack([data_B_1, data_B_2])
+#         test_B = np.hstack([test_B_1, test_B_2])
+#
+#     elif args.task_name == 'tables2chairs' or args.task_name == 'chairs2tables':
+#         data_A_1, data_A_2 = get_furniture_files(item='tables', test=False)
+#         test_A_1, test_A_2 = get_furniture_files(item='tables', test=True)
+#
+#         data_A = np.hstack([data_A_1, data_A_2])
+#         test_A = np.hstack([test_A_1, test_A_2])
+#
+#         data_B_1, data_B_2 = get_furniture_files(item='seating', test=False)
+#         test_B_1, test_B_2 = get_furniture_files(item='seating', test=True)
+#
+#         data_B = np.hstack([data_B_1, data_B_2])
+#         test_B = np.hstack([test_B_1, test_B_2])
+#
+#     return data_A, data_B, test_A, test_B
 
 
 def get_fm_loss(real_feats, fake_feats, criterion):
@@ -127,17 +128,10 @@ def main():
         model_path = os.path.join(model_path, args.style_A)
     model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
 
-    data_style_A, data_style_B, test_style_A, test_style_B = get_data()
+    data_style_A, data_style_B, test_style_A, test_style_B = get_data(args)
 
-    #if args.task_name.startswith('edges2'):
-    #    test_A = read_images(test_style_A, 'A', args.image_size)
-    #    test_B = read_images(test_style_B, 'B', args.image_size)
-    #elif args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
     test_A = read_images(test_style_A, args.image_size)
     test_B = read_images(test_style_B, args.image_size)
-    #else:
-    #    test_A = read_images(test_style_A, None, args.image_size)
-    #    test_B = read_images(test_style_B, None, args.image_size)
 
     with torch.no_grad():
         test_A = Variable(torch.FloatTensor(test_A))
@@ -206,15 +200,8 @@ def main():
             A_path = data_style_A[i * batch_size: (i+1) * batch_size]
             B_path = data_style_B[i * batch_size: (i+1) * batch_size]
 
-            # if args.task_name.startswith('edges2'):
-            #    A = read_images(A_path, 'A', args.image_size)
-            #    B = read_images(B_path, 'B', args.image_size)
-            # elif args.task_name =='handbags2shoes' or args.task_name == 'shoes2handbags':
             A = read_images(A_path, args.image_size)
             B = read_images(B_path, args.image_size)
-            # else:
-            #    A = read_images(A_path, None, args.image_size)
-            #    B = read_images(B_path, None, args.image_size)
 
             A = Variable(torch.FloatTensor(A))
             B = Variable(torch.FloatTensor(B))
@@ -297,20 +284,20 @@ def main():
                     os.makedirs(subdir_path)
 
                 for im_idx in range(n_testset):
-                    A_val = test_A[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
-                    B_val = test_B[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
-                    BA_val = BA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    ABA_val = ABA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    AB_val = AB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    BAB_val = BAB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
+                    #A_val = test_A[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
+                    #B_val = test_B[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
+                    #BA_val = BA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
+                    #ABA_val = ABA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
+                    #AB_val = AB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
+                    #BAB_val = BAB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
 
                     filename_prefix = os.path.join (subdir_path, str(im_idx))
-                    scipy.misc.imsave(filename_prefix + '.A.jpg', A_val.astype(np.uint8)[:,:,::-1])
-                    scipy.misc.imsave(filename_prefix + '.B.jpg', B_val.astype(np.uint8)[:,:,::-1])
-                    scipy.misc.imsave(filename_prefix + '.BA.jpg', BA_val.astype(np.uint8)[:,:,::-1])
-                    scipy.misc.imsave(filename_prefix + '.AB.jpg', AB_val.astype(np.uint8)[:,:,::-1])
-                    scipy.misc.imsave(filename_prefix + '.ABA.jpg', ABA_val.astype(np.uint8)[:,:,::-1])
-                    scipy.misc.imsave(filename_prefix + '.BAB.jpg', BAB_val.astype(np.uint8)[:,:,::-1])
+                    scipy.misc.imsave(filename_prefix + '.A.jpg', img4save(test_A[im_idx]))
+                    scipy.misc.imsave(filename_prefix + '.B.jpg', img4save(test_B[im_idx]))
+                    scipy.misc.imsave(filename_prefix + '.BA.jpg', img4save(BA[im_idx]))
+                    scipy.misc.imsave(filename_prefix + '.AB.jpg', img4save(AB[im_idx]))
+                    scipy.misc.imsave(filename_prefix + '.ABA.jpg', img4save(ABA[im_idx]))
+                    scipy.misc.imsave(filename_prefix + '.BAB.jpg', img4save(BAB[im_idx]))
 
             if iters % args.model_save_interval == 0:
                 torch.save(generator_A, os.path.join(model_path, 'model_gen_A-' + str((iters / args.model_save_interval) + load_iter)))
@@ -321,5 +308,5 @@ def main():
             iters += 1
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

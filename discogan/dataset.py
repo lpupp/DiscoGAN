@@ -11,6 +11,7 @@ import scipy.io
 #dataset_path = '/Users/lucagaegauf/Documents/GitHub/Keras-GAN/discogan/datasets/'
 dataset_path_1 = 'C:\\Users\\lucag\\OneDrive\\Documents\\GitHub\\Keras-GAN\\discogan\\datasets'
 dataset_path_2 = 'C:\\Users\\lucag\\Dropbox\\GAN\\furniture'
+dataset_path_3 = 'C:\\Users\\lucag\\Dropbox\\GAN\\fashion'
 
 #celebA_path = os.path.join(dataset_path, 'celebA')
 #facescrub_path = os.path.join(dataset_path, 'facescrub')
@@ -21,11 +22,15 @@ dataset_path_2 = 'C:\\Users\\lucag\\Dropbox\\GAN\\furniture'
 
 handbag_path = os.path.join(dataset_path_1, 'edges2handbags')
 shoe_path = os.path.join(dataset_path_1, 'edges2shoes')
+belt_path = os.path.join(dataset_path_3, 'belts')
+belt_files = os.path.join(dataset_path_3, 'belts_to_keep.txt')
 
 tables_path = os.path.join(dataset_path_2, 'tables')
 seating_path = os.path.join(dataset_path_2, 'seating')
+storage_path = os.path.join(dataset_path_2, 'storage')
 table_files = os.path.join(dataset_path_2, 'tables_to_keep.txt')
 seating_files = os.path.join(dataset_path_2, 'seating_to_keep.txt')
+storage_files = os.path.join(dataset_path_2, 'storage_to_keep.txt')
 
 def shuffle_data(da, db):
     a_idx = list(range(len(da)))
@@ -83,11 +88,36 @@ def get_edge2photo_files(item='edges2handbags', test=False):
     image_paths = list(map(lambda x: os.path.join(item_path, x), os.listdir(item_path)))
 
     if test:
-        return [image_paths, image_paths]
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
     else:
         n_slice = int(len(image_paths)/2)
         return [image_paths[:n_slice], image_paths[n_slice:]]
 
+
+def get_fashion_files(item='belts', test=False):
+    if item == 'belts':
+        item_files_ = belt_files
+        item_path = belt_path
+
+    with open(item_files_, 'r') as f:
+        item_files = [row[0] for row in csv.reader(f, delimiter='\n')]
+
+    if test:
+        #item_files = item_files[int(len(item_files) * 0.9):]
+        item_files = item_files[-400:]
+    else:
+        #item_files = item_files[:int(len(item_files) * 0.9)]
+        item_files = item_files[:len(item_files) - 400]
+
+    image_paths = list(map(lambda x: os.path.join(item_path, os.path.join(x.split('/')[-1])), item_files))
+
+    if test:
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
+    else:
+        n_slice = int(len(image_paths)/2)
+        return [image_paths[:n_slice], image_paths[n_slice:]]
 
 def get_furniture_files(item='tables', test=False):
     if item == 'tables':
@@ -96,6 +126,9 @@ def get_furniture_files(item='tables', test=False):
     elif item == 'seating':
         item_files_ = seating_files
         item_path = seating_path
+    elif item == 'storage':
+        item_files_ = storage_files
+        item_path = storage_path
 
     with open(item_files_, 'r') as f:
         item_files = [row[0] for row in csv.reader(f, delimiter='\n')]
