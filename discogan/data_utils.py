@@ -6,12 +6,6 @@ Created on Dec 18 2018
 @author: lpupp
 """
 
-# TODO(lpupp) belts will need to be handeled the same as tables and chairs
-# TODO(lpupp) split last 400 in tables, chairs, storage, carpets, belts
-# to val dir
-# TODO(lpupp) all get_files should return one output
-# TODO(lpupp) merge data_utils and dataset
-
 import os
 import numpy as np
 #from dataset import *
@@ -81,8 +75,8 @@ def img4save(data):
 
 def get_photo_files(nm):
     """Get photo files' paths."""
-    train_paths = glob(os.path.join(paths[nm], 'train'))
-    val_paths = glob(os.path.join(paths[nm], 'val'))
+    train_paths = glob(os.path.join(paths[nm], 'train', '*'))
+    val_paths = glob(os.path.join(paths[nm], 'val', '*'))
 
     return train_paths, val_paths
 

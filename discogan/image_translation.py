@@ -10,6 +10,7 @@ from torch.autograd import Variable
 from data_utils import *
 from model import *
 import scipy
+import scipy.misc
 from progressbar import ETA, Bar, Percentage, ProgressBar
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
