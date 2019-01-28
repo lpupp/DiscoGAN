@@ -3,7 +3,7 @@
 """
 Created on Tue Dec 18 09:53:31 2018
 
-@author: lucagaegauf
+@author: lpupp
 """
 
 #import os
@@ -14,6 +14,18 @@ from dataset import *
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+def dictionary_map(d, f):
+    return dict((k, f(v)) for k, v in d.items())
+
+
+def minibatch_call(data, nn_model, mb=32):
+    """Call model with mini-batches."""
+    out = []
+    for i in range(math.ceil(data.shape[0]/mb)):
+        out.append(nn_model(data[i*mb:(i+1)*mb]))
+    return torch.cat(out, dim=0)
 
 
 def find_top_n_similar(source_embeds, db_embeds, n=1):
