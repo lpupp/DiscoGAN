@@ -23,21 +23,26 @@ import scipy
 #import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
-parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
+#parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
+parser.add_argument('--cuda', type=bool, default=True, help='Set cuda usage')
 
 parser.add_argument('--domain', type=str, default='fashion', help='Set data domain. Choose among `fashion` or `furniture`')
 parser.add_argument('--data_A', type=str, default=None, help='Set source data domain. if domain==`fashion`, choose among [`handbags`, `shoes`, `belts`, `dresses`]; if domain==`furniture`, choose among choose among [`seating`, `tables`, `storage`].')
 # TODO(lpupp) remove task_name
-parser.add_argument('--task_name', type=str, default='shoes2handbags', help='Set data name')
+#parser.add_argument('--task_name', type=str, default='shoes2handbags', help='Set data name')
+
+parser.add_argument('--topn', type=int, defaults=5, help='load iteration suffix')
+parser.add_argument('--plot_topn_mixed', type=bool, default=True, help='Plot top n over all categories')
+parser.add_argument('--plot_topn_each_cat', type=bool, default=True, help='Plot top n for each category')
+parser.add_argument('--plot_enc_topn', type=bool, default=True, help='Plot top n with encoder only')
 
 #parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 parser.add_argument('--load_iter', type=float, help='load iteration suffix')
-parser.add_argument('--topn', type=int, defaults=5, help='load iteration suffix')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
-parser.add_argument('--embedding_encoder', type=str, default='vgg16', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models')
+parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models')
 #parser.add_argument('--similarity_metric', type=str, default='cosine', help='choose among cosine/euclidean similarity metrics.')
 
 parser.add_argument('--seed', type=int, default=0, help='Set seed')
@@ -68,9 +73,15 @@ parser.add_argument('--seed', type=int, default=0, help='Set seed')
 #txt2model = {'euclidean': cos_sim,
 #             'cosine': euclid}
 
-domain_l = {'furniture': ['seating', 'tables', 'storage'],
+domain_d = {'furniture': ['seating', 'tables', 'storage'],
             'fashion': ['handbags', 'shoes', 'belts', 'dresses']}
 letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+def create_path(base_path, task_name):
+    # TODO(lpupp) test
+    path = os.path.join(base_path, task_name)
+    path = os.path.join(path, args.model_arch + str(args.image_size))
+    return path
 
 
 def create_model_path(task_name):
@@ -87,40 +98,54 @@ def create_nms(task_name, domain2label):
 
 
 def main():
+    """Main TODO.
+
+    Steps:
+    - Load data.
+    - Load generators.
+    - Translate all images with generators.
+    - Encode images with pretrained encoder.
+    - Get top n.
+    - Plot everything.
+    """
 
     global args
     args = parser.parse_args()
 
     cuda = args.cuda
-    if cuda == 'true':
-        cuda = True
-    else:
-        cuda = False
+    #if cuda == 'true':
+    #    cuda = True
+    #else:
+    #    cuda = False
 
     print('cuda: {}'.format(cuda))
 
     use_all_domains = args.data_A is None
 
-    # TODO(lpupp)
-    _tmp = domain_l[args.domain]
-    data_A = args.data_A or _tmp[0]
-    _tmp.insert(0, _tmp.pop(_tmp.index(data_A)))
-    domain_labs = letters[:len(_tmp)]
-    domain = dict((k, v) for k, v in zip(domain_labs, _tmp))
-    domain2lab = dict((k, v) for k, v in zip(_tmp, letters[:len(_tmp)]))
+    # TODO(lpupp) test
+    domain_set = domain_d[args.domain]
+    data_A = args.data_A or domain_set[0]
+    domain_set.insert(0, domain_set.pop(domain_set.index(data_A)))
+    domain_labs = letters[:len(domain_set)]
+
+    domain = dict((k, v) for k, v in zip(domain_labs, domain_set))
+    domain2lab = dict((v, k) for k, v in domain.items())
 
     label_perms = [i + j for i, j in product(domain_labs, domain_labs) if i != j]
 
     # TODO (lpupp) Do this in general
-    #embedding_encoder, enc_input_size = initialize_model(args.embedding_encoder)
-    print('loading model. embedding_encoder {}'.format(args.embedding_encoder))
-    embedding_encoder = models.vgg19(pretrained=True)
-    #embedding_encoder = txt2model[args.embedding_encoder]
-    set_parameter_requires_grad(embedding_encoder, feature_extracting=True)
-    embedding_encoder = nn.Sequential(
-            *list(embedding_encoder.features.children())[:-1],
-            nn.MaxPool2d(kernel_size=14)
-            )
+    if args.embedding_encoder != 'vgg19':
+        raise NotImplementedError
+    else:
+        #embedding_encoder, enc_input_size = initialize_model(args.embedding_encoder)
+        print('loading embedding encoder {}'.format(args.embedding_encoder))
+        embedding_encoder = models.vgg19(pretrained=True)
+        #embedding_encoder = txt2model[args.embedding_encoder]
+        set_param_requires_grad(embedding_encoder, feature_extracting=True)
+        embedding_encoder = nn.Sequential(
+                *list(embedding_encoder.features.children())[:-1],
+                nn.MaxPool2d(kernel_size=14)
+                )
     enc_input_size = 224
 
     if cuda:
@@ -131,21 +156,21 @@ def main():
     #model_path = os.path.join(args.model_path, args.task_name)
     #model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
 
-    # TODO(lpupp) this will not work with args.task_name
-    topn_path = os.path.join(args.topn_path, args.task_name)
-    topn_path = os.path.join(topn_path, args.model_arch + str(args.image_size))
-    if not os.path.exists(topn_path):
-        os.makedirs(topn_path)
+    # TODO(lpupp)
+    for nm in domain.values():
+        topn_path = create_path(args.topn_path, nm)
+        if not os.path.exists(topn_path):
+            os.makedirs(topn_path)
 
-    print('model_path {}'.format(model_path))
-    print('topn_path {}'.format(topn_path))
-
-    img_paths = dict((k, get_photo_files(v)) for k, v in domain.items())
-    #_, _, test_style_A, test_style_B = get_data(args)
+    # TODO(lpupp) this may not be correct depending which folder the images are in...
+    img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
+    #img_paths = dict((k, get_photo_files(v)[1]) for k, v in domain.items())
 
     print('Reading images')
-    imgs = dict((k, read_images(v, args.image_size)) for k, v in img_paths.items())
-    n_imgs = dict((k, v.shape[0]) for k, v in test_imgs.items())
+    imgs = dict_map(img_paths, lambda v: read_images(v, args.image_size))
+    n_imgs = dict_map(imgs, lambda v: v.shape[0])
+    #imgs = dict((k, read_images(v, args.image_size)) for k, v in img_paths.items())
+    #n_imgs = dict((k, v.shape[0]) for k, v in imgs.items())
     #test_A = read_images(test_style_A, args.image_size)
     #test_B = read_images(test_style_B, args.image_size)
     #n_A_img, n_B_img = test_A.shape[0], test_B.shape[0]
@@ -173,7 +198,7 @@ def main():
     task_names = os.listdir(args.model_path)
     # TODO(lpupp) test
     for nm in task_names:
-        path = create_model_path(nm)
+        path = create_path(args.model_path, nm)
         A_nm, B_nm = create_nms(nm, domain2lab)
         generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + ix))
         generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + ix))
@@ -224,7 +249,9 @@ def main():
 
     print('Converting and resizing image tensors to numpy')
     # TODO(lpupp) Does this work?
-    imgs_enc = dict((k, [resize_img(i, dsize) for i in v]) for k, v in imgs_np.items())
+    imgs_enc = dict(imgs_np, lambda v: [resize_img(i, dsize) for i in v])
+    #imgs_enc = dict((k, [resize_img(i, dsize) for i in v]) for k, v in imgs_np.items())
+    
     #for i in range(n_A_img):
     #    #A_enc.append(tfs(A[i].astype(np.uint8)))
     #    A_enc.append(resize_img(A[i], dsize))
@@ -235,7 +262,7 @@ def main():
     #    BA_enc.append(resize_img(BA[i], dsize))
 
     # TODO(lpupp) test
-    imgs_enc = dictionary_map(imgs_enc, lambda x: np.stack(x).transpose(0, 3, 1, 2))
+    imgs_enc = dict_map(imgs_enc, lambda x: np.stack(x).transpose(0, 3, 1, 2))
     #A_enc = np.stack(A_enc).transpose(0, 3, 1, 2)
     #B_enc = np.stack(B_enc).transpose(0, 3, 1, 2)
     #AB_enc = np.stack(AB_enc).transpose(0, 3, 1, 2)
@@ -267,7 +294,7 @@ def main():
     # Encode all translated images (A, B, AB and BA)
     print('Encoding images --------------')
     # TODO(lpupp) test
-    imgs_enc = dictionary_map(imgs_enc, lambda x: minibatch_call(x, embedding_encoder))
+    imgs_enc = dict_map(imgs_enc, lambda x: minibatch_call(x, embedding_encoder))
     #print('A')
     #A_encoded = minibatch_call(A_enc, embedding_encoder)
     #print(A_encoded.shape)
