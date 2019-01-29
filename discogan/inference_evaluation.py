@@ -39,6 +39,8 @@ parser.add_argument('--plot_enc_topn', type=bool, default=True, help='Plot top n
 #parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
+
+# TODO(lpupp) load_iter is different for each task
 parser.add_argument('--load_iter', type=float, help='load iteration suffix')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
@@ -78,7 +80,6 @@ domain_d = {'furniture': ['seating', 'tables', 'storage'],
 letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 def create_path(base_path, task_name):
-    # TODO(lpupp) test
     path = os.path.join(base_path, task_name)
     path = os.path.join(path, args.model_arch + str(args.image_size))
     return path
@@ -153,73 +154,41 @@ def main():
 
     embedding_encoder.eval()
 
-    #model_path = os.path.join(args.model_path, args.task_name)
-    #model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
-
     # TODO(lpupp)
     for nm in domain.values():
         topn_path = create_path(args.topn_path, nm)
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
 
-    # TODO(lpupp) this may not be correct depending which folder the images are in...
     img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
-    #img_paths = dict((k, get_photo_files(v)[1]) for k, v in domain.items())
 
-    print('Reading images')
+    print('Reading images ---------------------------------------------------')
     imgs = dict_map(img_paths, lambda v: read_images(v, args.image_size))
+    # TODO(lpupp) for some reason there are only 399 seating loaded...
     n_imgs = dict_map(imgs, lambda v: v.shape[0])
-    #imgs = dict((k, read_images(v, args.image_size)) for k, v in img_paths.items())
-    #n_imgs = dict((k, v.shape[0]) for k, v in imgs.items())
-    #test_A = read_images(test_style_A, args.image_size)
-    #test_B = read_images(test_style_B, args.image_size)
-    #n_A_img, n_B_img = test_A.shape[0], test_B.shape[0]
 
-    for k in imgs:
-        with torch.no_grad():
-            imgs[k] = Variable(torch.FloatTensor(imgs[k]))
-        if cuda:
-            imgs[k] = imgs[k].cuda()
-
-    #with torch.no_grad():
-    #    test_A = Variable(torch.FloatTensor(test_A))
-    #with torch.no_grad():
-    #    test_B = Variable(torch.FloatTensor(test_B))
-    #
-    #if cuda:
-    #    test_A = test_A.cuda()
-    #    test_B = test_B.cuda()
+    imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
 
     print('Loading generator ------------------------------------------------')
 
-    ix = str(args.load_iter)
+    # TODO(lpupp) get max iter
+    ix = [str(74.0), str(31.0), str(31.0)]
 
     generators = {}
-    task_names = os.listdir(args.model_path)
+    task_names = [e for e in os.listdir(args.model_path) if '2' in e]
     # TODO(lpupp) test
-    for nm in task_names:
-        path = create_path(args.model_path, nm)
+    for i, nm in enumerate(task_names):
+        path = create_path(model_path, nm)
         A_nm, B_nm = create_nms(nm, domain2lab)
-        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + ix))
-        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + ix))
-
-    #model_path = os.path.join(args.model_path, get_task_name(A, B, model_paths))
-    #model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
-
-    #generator_A = torch.load(os.path.join(model_path, 'model_gen_A-' + ix))
-    #generator_B = torch.load(os.path.join(model_path, 'model_gen_B-' + ix))
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + ix[i]))
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + ix[i]))
 
     # translate all images (A and B)
     print('Translating images -----------------------------------------------')
-    for lab_perm in label_perms:
+    for ab in label_perms:
         # TODO(lpupp) test
-        print('{} to {}'.format(lab_perm[0], lab_perm[1]))
-        imgs[lab_perm] = generators[lab_perm[1]](imgs[lab_perm[0]])
-
-    #print('A to B')
-    #AB = generator_B(test_A)
-    #print('B to A')
-    #BA = generator_A(test_B)
+        print('{} to {}'.format(ab[0], ab[1]))
+        imgs[ab] = generators[ab](imgs[ab[0]])
 
     # Up to here is fine!!!!!!!! ##############################################
     # #########################################################################
@@ -239,74 +208,23 @@ def main():
     #        normalize
     #        ])
 
-    def resize_img(x, dsize):
-        return cv2.resize(x.transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC)
-
     # TODO (lpupp) Is there a way around this song and dance?
-    #A_enc, B_enc, AB_enc, BA_enc = [], [], [], []
-    imgs_np = dict((k, as_np(v)) for k, v in imgs.items())
-    #A, B, AB, BA = as_np(test_A), as_np(test_B), as_np(AB), as_np(BA)
+    imgs_np = dict_map(imgs, lambda v: as_np(v))
 
     print('Converting and resizing image tensors to numpy')
     # TODO(lpupp) Does this work?
-    imgs_enc = dict(imgs_np, lambda v: [resize_img(i, dsize) for i in v])
-    #imgs_enc = dict((k, [resize_img(i, dsize) for i in v]) for k, v in imgs_np.items())
-    
-    #for i in range(n_A_img):
-    #    #A_enc.append(tfs(A[i].astype(np.uint8)))
-    #    A_enc.append(resize_img(A[i], dsize))
-    #    AB_enc.append(resize_img(AB[i], dsize))
-    #for i in range(n_B_img):
-    #    #B_enc.append(tfs(B[i].astype(np.uint8)))
-    #    B_enc.append(resize_img(B[i], dsize))
-    #    BA_enc.append(resize_img(BA[i], dsize))
-
-    # TODO(lpupp) test
-    imgs_enc = dict_map(imgs_enc, lambda x: np.stack(x).transpose(0, 3, 1, 2))
-    #A_enc = np.stack(A_enc).transpose(0, 3, 1, 2)
-    #B_enc = np.stack(B_enc).transpose(0, 3, 1, 2)
-    #AB_enc = np.stack(AB_enc).transpose(0, 3, 1, 2)
-    #BA_enc = np.stack(BA_enc).transpose(0, 3, 1, 2)
-
-    for k in imgs_enc:
-        with torch.no_grad():
-            imgs_enc[k] = Variable(torch.FloatTensor(imgs_enc[k]))
-        if cuda:
-            imgs_enc[k] = imgs_enc[k].cuda()
-
-    #with torch.no_grad():
-    #    A_enc = Variable(torch.FloatTensor(A_enc))
-    #with torch.no_grad():
-    #    B_enc = Variable(torch.FloatTensor(B_enc))
-    #with torch.no_grad():
-    #    AB_enc = Variable(torch.FloatTensor(AB_enc))
-    #with torch.no_grad():
-    #    BA_enc = Variable(torch.FloatTensor(BA_enc))
-    #
-    #if cuda:
-    #    A_enc = A_enc.cuda()
-    #    B_enc = B_enc.cuda()
-    #    AB_enc = AB_enc.cuda()
-    #    BA_enc = BA_enc.cuda()
+    # TODO(lpupp) is there a nicer way to do this?
+    imgs_enc = dict_map(imgs_np, lambda v: [resize_img(v[i], dsize) for i in range(v.shape[0])])
+    imgs_enc = dict_map(imgs_enc, lambda v: np.stack(v).transpose(0, 3, 1, 2))
+    imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
 
     # TODO (lpupp) batch
     # TODO (lpupp) im getting pretty weird outputs
     # Encode all translated images (A, B, AB and BA)
     print('Encoding images --------------')
     # TODO(lpupp) test
-    imgs_enc = dict_map(imgs_enc, lambda x: minibatch_call(x, embedding_encoder))
-    #print('A')
-    #A_encoded = minibatch_call(A_enc, embedding_encoder)
-    #print(A_encoded.shape)
-    #print('B')
-    #B_encoded = minibatch_call(B_enc, embedding_encoder)
-    #print(B_encoded.shape)
-    #print('AB')
-    #AB_encoded = minibatch_call(AB_enc, embedding_encoder)
-    #print(AB_encoded.shape)
-    #print('BA')
-    #BA_encoded = minibatch_call(BA_enc, embedding_encoder)
-    #print(BA_encoded.shape)
+    imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, embedding_encoder))
+    print(dict_map(imgs_enc, lambda v: v.shape))
     # TODO (lpupp) Could output this to csv...
 
     # #########################################################################
@@ -319,33 +237,37 @@ def main():
     sim_disco, sim_vgg = {}, {}
     # TODO(lpupp) test
     print('find top n similar (discoGAN) ------------------------------------')
-    for lab_perm in label_perms:
-        print(lab_perm)
-        sim_disco[lab_perm] = find_top_n_similar(imgs_enc[lab_perm], imgs_enc[lab_perm[1]], n=args.topn)
+    for ab in label_perms:
+        print(ab)
+        sim_disco[ab] = find_top_n_similar(imgs_enc[ab], imgs_enc[ab[1]], n=args.topn)
 
     print('find top n similar (VGG) -----------------------------------------')
-    for lab in domain_labs:
-        remaining_labs = list(filter(lambda x: x != lab, domain_labs))
-        for i in remaining_labs:
-            sim_vgg[lab + '2' + i] = find_top_n_similar(imgs_enc[i], imgs_enc[lab], n=args.topn)
-
-    #print('AB')
-    #AB_similar = find_top_n_similar(AB_encoded, B_encoded, n=args.topn)
-    #print('BA')
-    #BA_similar = find_top_n_similar(BA_encoded, A_encoded, n=args.topn)
+    for i in domain_labs:
+        #remaining_labs = list(filter(lambda x: x != lab, domain_labs))
+        for j in domain_labs:
+            sim_vgg[i + j] = find_top_n_similar(imgs_enc[j], imgs_enc[i], n=args.topn)
 
     # Plot results nicely
-    # TODO(lpupp) adjust for multiple categories
-    print('plot --------------')
-    print('AB')
-    plot_all_outputs(AB_similar, [A, AB, B], src_style='A', path=topn_path)
-    print('BA')
-    plot_all_outputs(BA_similar, [B, BA, A], src_style='B', path=topn_path)
+    print('plot -------------------------------------------------------------')
+    for ab in label_perms:
+        print(ab)
+        a, b = ab[0], ab[1]
+        plot_all_outputs(sim_disco[ab],
+                         [imgs_np[a], imgs_np[ab], imgs_np[b]],
+                         src_style=str(ab)+'discogan', path=topn_path)
+    
+    for k in sim_vgg:
+        print(k)
+        a, b = k[0], k[1]
+        plot_all_outputs(sim_vgg[ab],
+                         [imgs_np[a], np.zeros_like(imgs_np[k]), imgs_np[b]],
+                         src_style=str(k)+'vgg', path=topn_path)
 
     # TODO(lpupp) Do real-world run through with a zalando image. Compare our
     #             output with their output. This would require a harvesting of
     #             the zalando database for a (at least) a few products...
     # TODO(lpupp) Compare performance to discoGAN encoders without decoders
+    # TODO(lpupp) Compare topn with and without source class
     # TODO(lpupp) Update existing script to return top n images from any class
 
 

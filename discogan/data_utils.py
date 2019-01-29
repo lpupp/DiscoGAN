@@ -17,7 +17,8 @@ import cv2
 #from scipy.misc import imresize
 #import scipy.io
 
-dataset_path = 'C:\\Users\\lucag\\Dropbox\\GAN'
+dataset_path = '/Users/lucagaegauf/Dropbox/GAN'
+#dataset_path = 'C:\\Users\\lucag\\Dropbox\\GAN'
 
 fashion_path = os.path.join(dataset_path, 'fashion')
 furniture_path = os.path.join(dataset_path, 'furniture')
@@ -71,6 +72,10 @@ def img4save(data):
     """Format images from tensor for saving."""
     data_ = as_np(data).transpose(1, 2, 0) * 255.
     return data_.astype(np.uint8)[:, :, ::-1]
+
+
+def resize_img(x, dsize):
+        return cv2.resize(x.transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC)
 
 
 def get_photo_files(nm):

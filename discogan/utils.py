@@ -16,6 +16,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def torch_cuda(x, cuda):
+    with torch.no_grad():
+        x = Variable(torch.FloatTensor(x))
+    if cuda:
+        x = x.cuda()
+    return x
+
+
 def dict_map(d, f):
     return dict((k, f(v)) for k, v in d.items())
 
@@ -26,24 +34,6 @@ def minibatch_call(data, nn_model, mb=32):
     for i in range(math.ceil(data.shape[0]/mb)):
         out.append(nn_model(data[i*mb:(i+1)*mb]))
     return torch.cat(out, dim=0)
-
-
-def find_top_n_similar(source_embeds, db_embeds, n=1):
-    out = {}
-    for i in range(source_embeds.shape[0]):
-        out[i] = find_top_n_similar_by_img(torch.squeeze(source_embeds[i]), db_embeds, n=n)
-    return out
-
-
-def find_top_n_similar_by_img(embed, db_embeds, n=1):
-    sim = []
-    for i in range(db_embeds.shape[0]):
-        sim.append(as_np(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)).item())
-
-        # TODO (lpupp) test this
-        #sim.append(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)
-        #sim = as_np(torch.cat(sim, dim=1))
-    return sorted(list(range(len(sim))), key=lambda i: sim[i])[-n:]
 
 
 def set_param_requires_grad(model, feature_extracting):
@@ -136,6 +126,24 @@ def initialize_model(model_name, num_classes=None):
     return model_ft, input_size
 
 
+def find_top_n_similar(source_embeds, db_embeds, n=1):
+    out = {}
+    for i in range(source_embeds.shape[0]):
+        out[i] = find_top_n_similar_by_img(torch.squeeze(source_embeds[i]), db_embeds, n=n)
+    return out
+
+
+def find_top_n_similar_by_img(embed, db_embeds, n=1):
+    sim = []
+    for i in range(db_embeds.shape[0]):
+        sim.append(as_np(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)).item())
+
+        # TODO (lpupp) test this
+        #sim.append(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)
+        #sim = as_np(torch.cat(sim, dim=1))
+    return sorted(list(range(len(sim))), key=lambda i: sim[i])[-n:]
+
+
 def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
     similar_ix.reverse()
     if len(imgs) == 3:
@@ -156,7 +164,7 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
 
     img_out = np.hstack((img_orig, img_tran, *imgs_comp))
 
-    if path is not None:
+    if path:
         filename = str(img_ix) + src_style + '.jpg'
         img_save = (img_out * 255.).astype(np.uint8)
         scipy.misc.imsave(os.path.join(path, filename), img_save)
