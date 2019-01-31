@@ -36,7 +36,6 @@ parser.add_argument('--model_path', type=str, default='./models/', help='Set the
 #parser.add_argument('--model_path', type=str, default='/Users/lucagaegauf/Dropbox/GAN/models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 
-# TODO(lpupp) load_iter is different for each task
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models')
@@ -197,7 +196,7 @@ def main():
     imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
 
     # Encode all translated images (A, B, AB and BA)
-    print('Encoding images --------------')
+    print('Encoding images -------------------------------------------------')
     imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, embedding_encoder))
     print(dict_map(imgs_enc, lambda v: v.shape))
     # TODO (lpupp) Could output this to csv...
@@ -212,13 +211,16 @@ def main():
     sim_disco, sim_vgg = {}, {}
     print('find top n similar (discoGAN) ------------------------------------')
     for ab in label_perms:
-        print(ab)
-        sim_disco[ab] = find_top_n_similar(imgs_enc[ab], imgs_enc[ab[1]], n=args.topn)
+        sim_disco[ab] = find_top_n_similar_dict(imgs_enc[ab], imgs_enc[ab[1]], n=args.topn)
 
     print('find top n similar (VGG) -----------------------------------------')
-    for i in domain_labs:
-        for j in domain_labs:
-            sim_vgg[i + j] = find_top_n_similar(imgs_enc[j], imgs_enc[i], n=args.topn)
+    for a in domain_labs:
+        for b in domain_labs:
+            if a == b:
+                tmp = find_top_n_similar_dict(imgs_enc[b], imgs_enc[a], n=args.topn+1)
+                sim_vgg[a+b] = dict_map(tmp, lambda v: v[:-1])
+            else:
+                sim_vgg[a+b] = find_top_n_similar_dict(imgs_enc[b], imgs_enc[a], n=args.topn)
 
     # Plot results nicely
     print('plot -------------------------------------------------------------')

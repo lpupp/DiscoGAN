@@ -18,6 +18,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+from PIL import Image, ImageOps, ImageDraw # ImageFont
+
 from data_utils import as_np
 
 
@@ -136,14 +138,14 @@ def initialize_model(model_name, num_classes=None):
     return model_ft, input_size
 
 
-def find_top_n_similar(source_embeds, db_embeds, n=1):
+def _find_top_n_similar(source_embeds, db_embeds, n=1):
     out = {}
     for i in range(source_embeds.shape[0]):
         out[i] = find_top_n_similar_by_img(torch.squeeze(source_embeds[i]), db_embeds, n=n)
     return out
 
 
-def find_top_n_similar_by_img(embed, db_embeds, n=1):
+def _find_top_n_similar_by_img(embed, db_embeds, n=1):
     sim = []
     for i in range(db_embeds.shape[0]):
         sim.append(as_np(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)).item())
@@ -154,8 +156,26 @@ def find_top_n_similar_by_img(embed, db_embeds, n=1):
     return sorted(list(range(len(sim))), key=lambda i: sim[i])[-n:]
 
 
+def find_top_n_similar_dict(source_embeds, db_embeds, n=1):
+    out = {}
+    for i in range(source_embeds.shape[0]):
+        out[i] = find_top_n_similar_by_img_dict(torch.squeeze(source_embeds[i]), db_embeds, n=n)
+    return out
+
+
+def find_top_n_similar_by_img_dict(embed, db_embeds, n=1):
+    sim = {}
+    for i in range(db_embeds.shape[0]):
+        sim[i] = as_np(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)).item()
+
+    return sorted(sim.items(), key=lambda kv: kv[1])[-n:]
+
+
 def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
     similar_ix.reverse()
+    ixs = [e[0] for e in similar_ix]
+    scores = [e[1] for e in similar_ix]
+
     if len(imgs) == 3:
         orig, trans, comp = imgs
     else:
@@ -170,14 +190,26 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
 
     #imgs_comp = as_np(comp[similar_ix])
     #imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(imgs_comp.shape[0])]
-    imgs_comp = [comp[i].transpose(1, 2, 0) for i in similar_ix]
+    imgs_comp = [comp[i].transpose(1, 2, 0) for i in ixs]
 
     img_out = np.hstack((img_orig, img_tran, *imgs_comp))
 
     if path:
+        col = (0, 0, 0)
+        n = len(scores)
         filename = str(img_ix) + src_style + '.jpg'
-        img_save = (img_out * 255.).astype(np.uint8)
-        scipy.misc.imsave(os.path.join(path, filename), img_save)
+        #img_save = (img_out * 255.).astype(np.uint8)
+        #scipy.misc.imsave(os.path.join(path, filename), img_save)
+
+        img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
+        img_save = ImageOps.expand(img_save, border=20, fill='white')
+        draw = ImageDraw.Draw(img_save)
+        draw.text((33, 2), 'orig', col)
+        draw.text((33 + 64, 2), 'trans', col)
+        draw.text((200, 2), 'top {} recommendations'.format(n), col)
+        for i, sim in enumerate(similar_ix):
+            draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
+        img_save.save(os.path.join(path, filename))
 
     return img_out
 
