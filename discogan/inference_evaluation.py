@@ -1,30 +1,14 @@
 import os
-#os.chdir('/Users/lucagaegauf/Documents/GitHub/DiscoGAN')
-#import sys
-#sys.path.append('./discogan')
-
 import argparse
-#import math
 from itertools import product
 
 import torch
 import torch.nn as nn
-#import torch.nn.functional as F
-#import torch.optim as optim
 import torchvision.models as models
-#from torch.autograd import Variable
 
-#from dataset import *
 from model import *
 from utils import *
 from data_utils import *
-
-#import scipy
-
-#import sklearn.metrics.pairwise.cosine_similarity as cosine_similarity
-#import scipy.spatial.distance.euclidean as euclidean_distance
-
-#import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 parser.add_argument('--cuda', type=bool, default=False, help='Set cuda usage')
@@ -33,7 +17,6 @@ parser.add_argument('--domain', type=str, default='fashion', help='Set data doma
 parser.add_argument('--topn', type=int, default=5, help='load iteration suffix')
 
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
-#parser.add_argument('--model_path', type=str, default='/Users/lucagaegauf/Dropbox/GAN/models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
@@ -75,7 +58,6 @@ letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def create_nms(task_name, domain2label):
-    # TODO(lpupp) test
     A, B = task_name.split('2')
     return domain2label[B] + domain2label[A], domain2label[A] + domain2label[B]
 
@@ -90,6 +72,13 @@ def main():
     - Encode images with pretrained encoder.
     - Get top n.
     - Plot everything.
+
+    TODO(lpupp)
+    [ ] Do real-world run through with a zalando image. Compare our output with
+        their output. This would require a harvesting of the zalando database
+        for a (at least) a few products...
+    [ ] Compare topn with and without source class
+    [ ] Update existing script to return top n images from any class
     """
 
     global args
@@ -102,8 +91,8 @@ def main():
     #use_all_domains = args.data_A is None
 
     model_arch = args.model_arch + str(args.image_size)
-    
-    # TODO(lpupp) 
+
+    # TODO(lpupp)
     d_nm = args.domain
     domain_set = domain_d[d_nm]
     #data_A = args.data_A or domain_set[0]
@@ -156,7 +145,7 @@ def main():
     generators = {}
     task_names = [e for e in os.listdir(args.model_path) if '2' in e]
     task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
-    
+
     for i, nm in enumerate(task_names):
         path = os.path.join(args.model_path, d_nm, nm, model_arch)
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
@@ -189,14 +178,13 @@ def main():
     #        ])
 
     # TODO (lpupp) Is there a way around this song and dance?
+    print('Converting and resizing image tensors to numpy -------------------')
     imgs_np = dict_map(imgs, lambda v: as_np(v))
-
-    print('Converting and resizing image tensors to numpy')
     imgs_enc = dict_map(imgs_np, lambda v: resize_array_of_images(v, dsize))
     imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
 
     # Encode all translated images (A, B, AB and BA)
-    print('Encoding images -------------------------------------------------')
+    print('Encoding images --------------------------------------------------')
     imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, embedding_encoder))
     print(dict_map(imgs_enc, lambda v: v.shape))
     # TODO (lpupp) Could output this to csv...
@@ -207,13 +195,14 @@ def main():
     # #########################################################################
     # Below here should be fine but needs to be tested
 
+    print('Find top n similar -----------------------------------------------')
+    print('Using discoGAN')
     # For each translation (AB and BA) find top 5 similarity (in B and A resp.)
     sim_disco, sim_vgg = {}, {}
-    print('find top n similar (discoGAN) ------------------------------------')
     for ab in label_perms:
         sim_disco[ab] = find_top_n_similar_dict(imgs_enc[ab], imgs_enc[ab[1]], n=args.topn)
 
-    print('find top n similar (VGG) -----------------------------------------')
+    print('Using pretrained {}'.format(args.embedding_encoder))
     for a in domain_labs:
         for b in domain_labs:
             if a == b:
@@ -223,7 +212,7 @@ def main():
                 sim_vgg[a+b] = find_top_n_similar_dict(imgs_enc[b], imgs_enc[a], n=args.topn)
 
     # Plot results nicely
-    print('plot -------------------------------------------------------------')
+    print('Ploting results --------------------------------------------------')
     # Plot top n similar using discogan results
     for ab in label_perms:
         print(ab)
@@ -241,13 +230,6 @@ def main():
                          [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
                          src_style=str(ab),
                          path=os.path.join(args.topn_path, d_nm, domain[a], 'vgg'))
-                         
-
-    # TODO(lpupp) Do real-world run through with a zalando image. Compare our
-    #             output with their output. This would require a harvesting of
-    #             the zalando database for a (at least) a few products...
-    # TODO(lpupp) Compare topn with and without source class
-    # TODO(lpupp) Update existing script to return top n images from any class
 
 
 if __name__ == "__main__":
