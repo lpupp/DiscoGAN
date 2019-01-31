@@ -11,9 +11,14 @@ import cv2
 import numpy as np
 from dataset import *
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
+
+from data_utils import as_np
 
 
 def torch_cuda(x, cuda):
@@ -28,11 +33,16 @@ def dict_map(d, f):
     return dict((k, f(v)) for k, v in d.items())
 
 
-def minibatch_call(data, nn_model, mb=32):
+def minibatch_call(dt, nn_model, mb=32):
     """Call model with mini-batches."""
     out = []
-    for i in range(math.ceil(data.shape[0]/mb)):
-        out.append(nn_model(data[i*mb:(i+1)*mb]))
+    # TODO(lpupp) cle
+    dim = dt.shape[0]
+    for i in range(math.ceil(dim/mb)):
+        try:
+            out.append(nn_model(dt.narrow(0, i*mb, mb)))
+        except:
+            out.append(nn_model(dt.narrow(0, i*mb, dim - i*mb)))
     return torch.cat(out, dim=0)
 
 
