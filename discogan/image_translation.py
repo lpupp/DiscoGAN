@@ -14,7 +14,7 @@ import scipy.misc
 from progressbar import ETA, Bar, Percentage, ProgressBar
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
-parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
+parser.add_argument('--cuda', type=bool, default=True, help='Set cuda usage')
 parser.add_argument('--task_name', type=str, default='handbags2shoes', help='Set data name')
 parser.add_argument('--epoch_size', type=int, default=5000, help='Set epoch size')
 parser.add_argument('--batch_size', type=int, default=256, help='Set batch size')
@@ -100,18 +100,22 @@ def get_gan_loss(dis_real, dis_fake, criterion, cuda):
     return dis_loss, gen_loss
 
 
+domain_d = {'furniture': ['seating', 'tables', 'storage'],
+            'fashion': ['handbags', 'shoes', 'belts', 'dresses']}
+
+
 def main():
 
     global args
     args = parser.parse_args()
 
     cuda = args.cuda
-    if cuda == 'true':
-        cuda = True
-    else:
-        cuda = False
 
     task_name = args.task_name
+    if task_name.split('2')[0] in domain_d['fashion']:
+        d_nm = 'fashion'
+    elif task_name.split('2')[0] in domain_d['furniture']:
+        d_nm = 'furniture'
 
     epoch_size = args.epoch_size
     batch_size = args.batch_size
@@ -119,12 +123,12 @@ def main():
     to_load = args.load_iter > 0
     load_iter = args.load_iter * to_load
 
-    result_path = os.path.join(args.result_path, args.task_name)
+    result_path = os.path.join(args.result_path, d_nm, task_name)
     if args.style_A:
         result_path = os.path.join(result_path, args.style_A)
     result_path = os.path.join(result_path, args.model_arch + str(args.image_size))
 
-    model_path = os.path.join(args.model_path, args.task_name)
+    model_path = os.path.join(args.model_path, d_nm, task_name)
     if args.style_A:
         model_path = os.path.join(model_path, args.style_A)
     model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
