@@ -75,7 +75,12 @@ def img4save(data):
 
 
 def resize_img(x, dsize):
-        return cv2.resize(x.transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC)
+    return cv2.resize(x.transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC)
+
+
+def resize_array_of_images(v, dsize):
+    v = np.stack([resize_img(v[i], dsize) for i in range(v.shape[0])])
+    return v.transpose(0, 3, 1, 2)
 
 
 def get_photo_files(nm):
