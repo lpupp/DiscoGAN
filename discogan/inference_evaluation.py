@@ -1,21 +1,25 @@
 import os
+#os.chdir('/Users/lucagaegauf/Documents/GitHub/DiscoGAN')
+#import sys
+#sys.path.append('./discogan')
+
 import argparse
-import math
-from itertools import chain, product
+#import math
+from itertools import product
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
+#import torch.nn.functional as F
+#import torch.optim as optim
 import torchvision.models as models
-from torch.autograd import Variable
+#from torch.autograd import Variable
 
 #from dataset import *
 from model import *
 from utils import *
 from data_utils import *
 
-import scipy
+#import scipy
 
 #import sklearn.metrics.pairwise.cosine_similarity as cosine_similarity
 #import scipy.spatial.distance.euclidean as euclidean_distance
@@ -23,25 +27,16 @@ import scipy
 #import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
-#parser.add_argument('--cuda', type=str, default='true', help='Set cuda usage')
-parser.add_argument('--cuda', type=bool, default=True, help='Set cuda usage')
+parser.add_argument('--cuda', type=bool, default=False, help='Set cuda usage')
 
 parser.add_argument('--domain', type=str, default='fashion', help='Set data domain. Choose among `fashion` or `furniture`')
-parser.add_argument('--data_A', type=str, default=None, help='Set source data domain. if domain==`fashion`, choose among [`handbags`, `shoes`, `belts`, `dresses`]; if domain==`furniture`, choose among choose among [`seating`, `tables`, `storage`].')
-# TODO(lpupp) remove task_name
-#parser.add_argument('--task_name', type=str, default='shoes2handbags', help='Set data name')
+parser.add_argument('--topn', type=int, default=5, help='load iteration suffix')
 
-parser.add_argument('--topn', type=int, defaults=5, help='load iteration suffix')
-parser.add_argument('--plot_topn_mixed', type=bool, default=True, help='Plot top n over all categories')
-parser.add_argument('--plot_topn_each_cat', type=bool, default=True, help='Plot top n for each category')
-parser.add_argument('--plot_enc_topn', type=bool, default=True, help='Plot top n with encoder only')
-
-#parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
+#parser.add_argument('--model_path', type=str, default='/Users/lucagaegauf/Dropbox/GAN/models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 
 # TODO(lpupp) load_iter is different for each task
-parser.add_argument('--load_iter', type=float, help='load iteration suffix')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models')
@@ -79,18 +74,6 @@ domain_d = {'furniture': ['seating', 'tables', 'storage'],
             'fashion': ['handbags', 'shoes', 'belts', 'dresses']}
 letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-def create_path(base_path, task_name):
-    path = os.path.join(base_path, task_name)
-    path = os.path.join(path, args.model_arch + str(args.image_size))
-    return path
-
-
-def create_model_path(task_name):
-    # TODO(lpupp) test
-    model_path = os.path.join(args.model_path, task_name)
-    model_path = os.path.join(model_path, args.model_arch + str(args.image_size))
-    return model_path
-
 
 def create_nms(task_name, domain2label):
     # TODO(lpupp) test
@@ -114,19 +97,18 @@ def main():
     args = parser.parse_args()
 
     cuda = args.cuda
-    #if cuda == 'true':
-    #    cuda = True
-    #else:
-    #    cuda = False
 
     print('cuda: {}'.format(cuda))
 
-    use_all_domains = args.data_A is None
+    #use_all_domains = args.data_A is None
 
-    # TODO(lpupp) test
-    domain_set = domain_d[args.domain]
-    data_A = args.data_A or domain_set[0]
-    domain_set.insert(0, domain_set.pop(domain_set.index(data_A)))
+    model_arch = args.model_arch + str(args.image_size)
+    
+    # TODO(lpupp) 
+    d_nm = args.domain
+    domain_set = domain_d[d_nm]
+    #data_A = args.data_A or domain_set[0]
+    #domain_set.insert(0, domain_set.pop(domain_set.index(data_A)))
     domain_labs = letters[:len(domain_set)]
 
     domain = dict((k, v) for k, v in zip(domain_labs, domain_set))
@@ -156,7 +138,10 @@ def main():
 
     # TODO(lpupp)
     for nm in domain.values():
-        topn_path = create_path(args.topn_path, nm)
+        topn_path = os.path.join(args.topn_path, d_nm, nm, model_arch)
+        if not os.path.exists(topn_path):
+            os.makedirs(topn_path)
+        topn_path = os.path.join(args.topn_path, d_nm, nm, 'vgg')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
 
@@ -166,27 +151,23 @@ def main():
     imgs = dict_map(img_paths, lambda v: read_images(v, args.image_size))
     # TODO(lpupp) for some reason there are only 399 seating loaded...
     n_imgs = dict_map(imgs, lambda v: v.shape[0])
-
     imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
 
     print('Loading generator ------------------------------------------------')
-
-    # TODO(lpupp) get max iter
-    ix = [str(74.0), str(31.0), str(31.0)]
-
     generators = {}
     task_names = [e for e in os.listdir(args.model_path) if '2' in e]
-    # TODO(lpupp) test
+    task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
+    
     for i, nm in enumerate(task_names):
-        path = create_path(model_path, nm)
+        path = os.path.join(args.model_path, d_nm, nm, model_arch)
+        ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         A_nm, B_nm = create_nms(nm, domain2lab)
-        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + ix[i]))
-        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + ix[i]))
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
 
     # translate all images (A and B)
     print('Translating images -----------------------------------------------')
     for ab in label_perms:
-        # TODO(lpupp) test
         print('{} to {}'.format(ab[0], ab[1]))
         imgs[ab] = generators[ab](imgs[ab[0]])
 
@@ -212,17 +193,11 @@ def main():
     imgs_np = dict_map(imgs, lambda v: as_np(v))
 
     print('Converting and resizing image tensors to numpy')
-    # TODO(lpupp) Does this work?
-    # TODO(lpupp) is there a nicer way to do this?
-    imgs_enc = dict_map(imgs_np, lambda v: [resize_img(v[i], dsize) for i in range(v.shape[0])])
-    imgs_enc = dict_map(imgs_enc, lambda v: np.stack(v).transpose(0, 3, 1, 2))
+    imgs_enc = dict_map(imgs_np, lambda v: resize_array_of_images(v, dsize))
     imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
 
-    # TODO (lpupp) batch
-    # TODO (lpupp) im getting pretty weird outputs
     # Encode all translated images (A, B, AB and BA)
     print('Encoding images --------------')
-    # TODO(lpupp) test
     imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, embedding_encoder))
     print(dict_map(imgs_enc, lambda v: v.shape))
     # TODO (lpupp) Could output this to csv...
@@ -235,7 +210,6 @@ def main():
 
     # For each translation (AB and BA) find top 5 similarity (in B and A resp.)
     sim_disco, sim_vgg = {}, {}
-    # TODO(lpupp) test
     print('find top n similar (discoGAN) ------------------------------------')
     for ab in label_perms:
         print(ab)
@@ -243,30 +217,33 @@ def main():
 
     print('find top n similar (VGG) -----------------------------------------')
     for i in domain_labs:
-        #remaining_labs = list(filter(lambda x: x != lab, domain_labs))
         for j in domain_labs:
             sim_vgg[i + j] = find_top_n_similar(imgs_enc[j], imgs_enc[i], n=args.topn)
 
     # Plot results nicely
     print('plot -------------------------------------------------------------')
+    # Plot top n similar using discogan results
     for ab in label_perms:
         print(ab)
         a, b = ab[0], ab[1]
         plot_all_outputs(sim_disco[ab],
                          [imgs_np[a], imgs_np[ab], imgs_np[b]],
-                         src_style=str(ab)+'discogan', path=topn_path)
-    
-    for k in sim_vgg:
-        print(k)
-        a, b = k[0], k[1]
+                         src_style=str(ab),
+                         path=os.path.join(args.topn_path, d_nm, domain[a], model_arch))
+
+    # Plot top n similar using VGG results
+    for ab in sim_vgg:
+        print(ab)
+        a, b = ab[0], ab[1]
         plot_all_outputs(sim_vgg[ab],
-                         [imgs_np[a], np.zeros_like(imgs_np[k]), imgs_np[b]],
-                         src_style=str(k)+'vgg', path=topn_path)
+                         [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
+                         src_style=str(ab),
+                         path=os.path.join(args.topn_path, d_nm, domain[a], 'vgg'))
+                         
 
     # TODO(lpupp) Do real-world run through with a zalando image. Compare our
     #             output with their output. This would require a harvesting of
     #             the zalando database for a (at least) a few products...
-    # TODO(lpupp) Compare performance to discoGAN encoders without decoders
     # TODO(lpupp) Compare topn with and without source class
     # TODO(lpupp) Update existing script to return top n images from any class
 
