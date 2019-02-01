@@ -46,17 +46,22 @@ def shuffle_data(da, db):
     return shuffled_da, shuffled_db
 
 
+def read_image(filename, image_size=64):
+    image = cv2.imread(filename)
+    if image is not None:
+        image = cv2.resize(image, (image_size, image_size))
+        image = image.astype(np.float32) / 255.
+        image = image.transpose(2, 0, 1)
+    return image
+
+
 def read_images(filenames, image_size=64):
     """Read images from path."""
     images = []
     for fn in filenames:
-        image = cv2.imread(fn)
+        image = read_image(fn)
         if image is None:
             continue
-
-        image = cv2.resize(image, (image_size, image_size))
-        image = image.astype(np.float32) / 255.
-        image = image.transpose(2, 0, 1)
         images.append(image)
 
     images = np.stack(images)

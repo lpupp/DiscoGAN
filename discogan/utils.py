@@ -171,6 +171,35 @@ def find_top_n_similar_by_img_dict(embed, db_embeds, n=1):
     return sorted(sim.items(), key=lambda kv: kv[1])[-n:]
 
 
+def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
+    similar_ix.reverse()
+    dom = [e[0] for e in similar_ix]
+    ixs = [e[1][0] for e in similar_ix]
+    scores = [e[1][1] for e in similar_ix]
+
+    img_orig = img_src[0].transpose(1, 2, 0)
+    imgs_tran = [v[0].transpose(1, 2, 0) for v in img_trans.values()]
+    imgs_comp = [img_db[d][i].transpose(1, 2, 0) for d, i in zip(dom, ixs)]
+    img_out = np.hstack((img_orig, *imgs_tran, *imgs_comp))
+
+    if path:
+        col = (0, 0, 0)
+        n = len(scores)
+        filename = str(img_ix) + 'all.jpg'
+
+        img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
+        img_save = ImageOps.expand(img_save, border=20, fill='white')
+        draw = ImageDraw.Draw(img_save)
+        draw.text((33, 2), 'orig', col)
+        draw.text((33 + 64 + 32, 2), 'trans', col)
+        draw.text((200, 2), 'top {} recommendations'.format(n), col)
+        for i, sim in enumerate(similar_ix):
+            draw.text((64*(i+3)+20, 88), '({} {})'.format(ixs[i], round(scores[i], 3)), col)
+        img_save.save(os.path.join(path, filename))
+
+    return img_out
+
+
 def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
     similar_ix.reverse()
     ixs = [e[0] for e in similar_ix]
