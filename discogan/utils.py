@@ -216,15 +216,8 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
     else:
         raise ValueError
 
-    #img_orig = as_np(orig[img_ix]).transpose(1, 2, 0)
     img_orig = orig[img_ix].transpose(1, 2, 0)
-
-    #img_tran = as_np(trans[img_ix]).transpose(1, 2, 0)
-    #img_tran = cv2.resize(img_tran, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
     img_tran = trans[img_ix].transpose(1, 2, 0)
-
-    #imgs_comp = as_np(comp[similar_ix])
-    #imgs_comp = [imgs_comp[i].transpose(1, 2, 0) for i in range(imgs_comp.shape[0])]
     imgs_comp = [comp[i].transpose(1, 2, 0) for i in ixs]
 
     img_out = np.hstack((img_orig, img_tran, *imgs_comp))
@@ -233,8 +226,6 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
         col = (0, 0, 0)
         n = len(scores)
         filename = str(img_ix) + src_style + '.jpg'
-        #img_save = (img_out * 255.).astype(np.uint8)
-        #scipy.misc.imsave(os.path.join(path, filename), img_save)
 
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
         img_save = ImageOps.expand(img_save, border=20, fill='white')
