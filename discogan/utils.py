@@ -6,7 +6,6 @@ Created on Tue Dec 18 09:53:31 2018
 @author: lpupp
 """
 
-#import os
 import cv2
 import numpy as np
 from dataset import *
@@ -18,12 +17,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from PIL import Image, ImageOps, ImageDraw # ImageFont
+from PIL import Image, ImageOps, ImageDraw  # ImageFont
 
 from data_utils import as_np
 
 
 def torch_cuda(x, cuda):
+    """Convert input to (cuda) tensor."""
     with torch.no_grad():
         x = Variable(torch.FloatTensor(x))
     if cuda:
@@ -32,13 +32,13 @@ def torch_cuda(x, cuda):
 
 
 def dict_map(d, f):
+    """Apply function on every value in dictionary."""
     return dict((k, f(v)) for k, v in d.items())
 
 
 def minibatch_call(dt, nn_model, mb=32):
     """Call model with mini-batches."""
     out = []
-    # TODO(lpupp) cle
     dim = dt.shape[0]
     for i in range(math.ceil(dim/mb)):
         try:
@@ -49,6 +49,7 @@ def minibatch_call(dt, nn_model, mb=32):
 
 
 def set_param_requires_grad(model, feature_extracting):
+    """Set which parameters require a gradient for training."""
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False
@@ -156,14 +157,16 @@ def _find_top_n_similar_by_img(embed, db_embeds, n=1):
     return sorted(list(range(len(sim))), key=lambda i: sim[i])[-n:]
 
 
-def find_top_n_similar_dict(source_embeds, db_embeds, n=1):
+def find_top_n_similar(src_embeds, db_embeds, n=1):
+    """Find top n similar for each image in array."""
     out = {}
-    for i in range(source_embeds.shape[0]):
-        out[i] = find_top_n_similar_by_img_dict(torch.squeeze(source_embeds[i]), db_embeds, n=n)
+    for i in range(src_embeds.shape[0]):
+        out[i] = find_top_n_similar_by_img_dict(torch.squeeze(src_embeds[i]), db_embeds, n=n)
     return out
 
 
-def find_top_n_similar_by_img_dict(embed, db_embeds, n=1):
+def find_top_n_similar_by_img(embed, db_embeds, n=1):
+    """Find top n similar images."""
     sim = {}
     for i in range(db_embeds.shape[0]):
         sim[i] = as_np(F.cosine_similarity(embed, torch.squeeze(db_embeds[i]), dim=0)).item()
@@ -172,6 +175,7 @@ def find_top_n_similar_by_img_dict(embed, db_embeds, n=1):
 
 
 def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
+    """Plot top n recommendations across all comparison categories."""
     similar_ix.reverse()
     dom = [e[0] for e in similar_ix]
     ixs = [e[1][0] for e in similar_ix]
@@ -202,6 +206,7 @@ def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
 
 
 def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
+    """Plot top n recommendations for each categories individually."""
     similar_ix.reverse()
     ixs = [e[0] for e in similar_ix]
     scores = [e[1] for e in similar_ix]
@@ -236,7 +241,7 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
         draw = ImageDraw.Draw(img_save)
         draw.text((20, 2), 'orig', col)
         draw.text((20 + 64, 2), 'trans', col)
-        draw.text((200, 2), 'top {} recommendations'.format(n), col)
+        draw.text((20 + 64*2, 2), 'top {} recommendations'.format(n), col)
         for i, sim in enumerate(similar_ix):
             draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
         img_save.save(os.path.join(path, filename))
@@ -245,6 +250,7 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
 
 
 def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None):
+    """plot_outputs for array of source images."""
     out = []
     for i in similar_ixs:
         out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path))

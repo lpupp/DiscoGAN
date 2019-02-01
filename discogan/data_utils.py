@@ -26,6 +26,7 @@ furniture_path = os.path.join(dataset_path, 'furniture')
 paths = {'handbags': os.path.join(fashion_path, 'handbags'),
          'shoes': os.path.join(fashion_path, 'shoes'),
          'belts': os.path.join(fashion_path, 'belts'),
+         'dresses': os.path.join(fashion_path, 'dresses'),
          'tables': os.path.join(furniture_path, 'tables'),
          'seating': os.path.join(furniture_path, 'seating'),
          'storage': os.path.join(furniture_path, 'storage'),
@@ -47,6 +48,7 @@ def shuffle_data(da, db):
 
 
 def read_image(filename, image_size=64):
+    """Read image from path."""
     image = cv2.imread(filename)
     if image is not None:
         image = cv2.resize(image, (image_size, image_size))
@@ -56,7 +58,7 @@ def read_image(filename, image_size=64):
 
 
 def read_images(filenames, image_size=64):
-    """Read images from path."""
+    """Read images from list of paths."""
     images = []
     for fn in filenames:
         image = read_image(fn)
@@ -80,10 +82,12 @@ def img4save(data):
 
 
 def resize_img(x, dsize):
+    """Resize image."""
     return cv2.resize(x.transpose(1, 2, 0), dsize=dsize, interpolation=cv2.INTER_CUBIC)
 
 
 def resize_array_of_images(v, dsize):
+    """Resize array of images."""
     v = np.stack([resize_img(v[i], dsize) for i in range(v.shape[0])])
     return v.transpose(0, 3, 1, 2)
 
