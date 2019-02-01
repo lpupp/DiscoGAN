@@ -1,8 +1,4 @@
 import os
-#os.chdir('/Users/lucagaegauf/Documents/GitHub/DiscoGAN')
-#import sys
-#sys.path.append('./discogan/')
-
 import argparse
 from itertools import product
 
@@ -15,13 +11,12 @@ from utils import *
 from data_utils import *
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
-parser.add_argument('--cuda', type=bool, default=False, help='Set cuda usage')
+parser.add_argument('--cuda', type=bool, default=True, help='Set cuda usage')
 
 parser.add_argument('--domain', type=str, default='fashion', help='Set data domain. Choose among `fashion` or `furniture`')
 parser.add_argument('--topn', type=int, default=5, help='load iteration suffix')
 
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
-#parser.add_argument('--model_path', type=str, default='/Users/lucagaegauf/Dropbox/GAN/models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
@@ -29,8 +24,8 @@ parser.add_argument('--model_arch', type=str, default='discogan', help='choose a
 parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choose among pre-trained alexnet/vgg{11, 13, 16, 19}/vgg{11, 13, 16, 19}bn/resnet{18, 34, 50, 101, 152}/squeezenet{1.0, 1.1}/densenet{121, 169, 201, 161}/inceptionv3 models')
 #parser.add_argument('--similarity_metric', type=str, default='cosine', help='choose among cosine/euclidean similarity metrics.')
 
-parser.add_argument('--image_path', type=str, default=None, help='Set the path for trained models')
-parser.add_argument('--image_class', type=str, default=None, help='Set the path for trained models')
+parser.add_argument('--image_path', type=str, default=None, help='If provided, single_image will be execute, else main. Path to image.')
+parser.add_argument('--image_class', type=str, default=None, help='Class to with image_path image belongs. E.g. shoes')
 
 # TODO (lpupp) remove. bad idea -- loads all of the nets
 #txt2model = {'alexnet': models.alexnet(pretrained=True),
@@ -80,6 +75,7 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
     - Plot everything.
 
     TODO(lpupp)
+    [ ] Load model ix. Recommendation is to put the final models in './final_models/'
     [ ] Do real-world run through with a zalando image. Compare our output with
         their output. This would require a harvesting of the zalando database
         for a (at least) a few products...
@@ -121,8 +117,8 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
         path = os.path.join(paths['model'], nm, model_arch)
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         A_nm, B_nm = create_nms(nm, domain2lab)
-        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
-        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))
 
     # translate all images (A and B)
     print('Translating images -----------------------------------------------')
@@ -242,10 +238,10 @@ def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, p
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         if A == img_class:
             nm = 'A' + domain2lab[B]
-            generators[nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
+            generators[nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))
         else:
             nm = 'A' + domain2lab[A]
-            generators[nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
+            generators[nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))
 
     print('Translating source image -----------------------------------------')
     img_trans = dict_map(generators, lambda gen: gen(source_img))

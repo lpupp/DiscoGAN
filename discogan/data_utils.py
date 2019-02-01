@@ -17,8 +17,8 @@ import cv2
 #from scipy.misc import imresize
 #import scipy.io
 
-dataset_path = '/Users/lucagaegauf/Dropbox/GAN'
-#dataset_path = 'C:\\Users\\lucag\\Dropbox\\GAN'
+#dataset_path = '/Users/lucagaegauf/Dropbox/GAN'
+dataset_path = 'C:\\Users\\lucag\\Dropbox\\GAN'
 
 fashion_path = os.path.join(dataset_path, 'fashion')
 furniture_path = os.path.join(dataset_path, 'furniture')

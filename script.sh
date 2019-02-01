@@ -24,14 +24,11 @@ python ./discogan/image_translation.py --task_name=tables2seating --starting_rat
 python ./discogan/image_translation.py --task_name=seating2storage --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
 python ./discogan/image_translation.py --task_name=storage2tables --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
 
-
 # Evaluation -------------------------------------------
 # Run fashion
-#python ./discogan/inference_evaluation.py --task_name shoes2handbags --load_iter 18.0 --embedding_encoder vgg19
-#python ./discogan/inference_evaluation.py --task_name handbags2belts --load_iter 18.0 --embedding_encoder vgg19
-#python ./discogan/inference_evaluation.py --task_name belts2shoes --load_iter 18.0 --embedding_encoder vgg19
+#python discogan/inference_evaluation.py
+#python discogan/inference_evaluation.py --domain furniture
 
-# Run furniture
-#python ./discogan/inference_evaluation.py --task_name tables2chairs --load_iter 23.0 --embedding_encoder vgg19
-#python ./discogan/inference_evaluation.py --task_name seating2storage --load_iter 23.0 --embedding_encoder vgg19
-#python ./discogan/inference_evaluation.py --task_name storage2tables --load_iter 23.0 --embedding_encoder vgg19
+# Run eval for a single image
+#python discogan/inference_evaluation.py --image_path C:\Users\lucag\Dropbox\GAN\fashion\shoes\val\2_AB.jpg --image_class shoes
+#python discogan/inference_evaluation.py --domain furniture --image_path C:\Users\lucag\Dropbox\GAN\furniture\tables\convito_5_1_sq.jpg --image_class tables
