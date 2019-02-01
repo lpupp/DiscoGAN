@@ -142,7 +142,7 @@ def initialize_model(model_name, num_classes=None):
 def _find_top_n_similar(source_embeds, db_embeds, n=1):
     out = {}
     for i in range(source_embeds.shape[0]):
-        out[i] = find_top_n_similar_by_img(torch.squeeze(source_embeds[i]), db_embeds, n=n)
+        out[i] = _find_top_n_similar_by_img(torch.squeeze(source_embeds[i]), db_embeds, n=n)
     return out
 
 
@@ -161,7 +161,7 @@ def find_top_n_similar(src_embeds, db_embeds, n=1):
     """Find top n similar for each image in array."""
     out = {}
     for i in range(src_embeds.shape[0]):
-        out[i] = find_top_n_similar_by_img_dict(torch.squeeze(src_embeds[i]), db_embeds, n=n)
+        out[i] = find_top_n_similar_by_img(torch.squeeze(src_embeds[i]), db_embeds, n=n)
     return out
 
 

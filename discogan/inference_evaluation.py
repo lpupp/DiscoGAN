@@ -98,10 +98,10 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
     dsize = (enc_img_size, enc_img_size)
 
     for nm in domain.values():
-        topn_path = os.path.join(paths['topn'], d_nm, nm, model_arch)
+        topn_path = os.path.join(paths['topn'], nm, model_arch)
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
-        topn_path = os.path.join(paths['topn'], d_nm, nm, 'vgg')
+        topn_path = os.path.join(paths['topn'], nm, 'vgg')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
 
@@ -109,7 +109,6 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
 
     print('Reading images ---------------------------------------------------')
     imgs = dict_map(img_paths, lambda v: read_images(v, img_size))
-    # TODO(lpupp) for some reason there are only 399 seating loaded...
     n_imgs = dict_map(imgs, lambda v: v.shape[0])
     imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
 
@@ -119,7 +118,7 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
     task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
 
     for i, nm in enumerate(task_names):
-        path = os.path.join(paths['model'], d_nm, nm, model_arch)
+        path = os.path.join(paths['model'], nm, model_arch)
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         A_nm, B_nm = create_nms(nm, domain2lab)
         generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))#, map_location={'cuda:0': 'cpu'})
@@ -131,9 +130,8 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
         print('{} to {}'.format(ab[0], ab[1]))
         imgs[ab] = generators[ab](imgs[ab[0]])
 
-    # Up to here is fine!!!!!!!! ##############################################
     # #########################################################################
-    # TODO(lpupp) Below here is not fine!!!!!!!! ##############################
+    # TODO(lpupp) Is there around this? #######################################
     # The problem is the transform crap
     # Why do I need the transform stuff? because the encoder dimension expects
     # a different sized input.
@@ -161,26 +159,22 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
     # TODO (lpupp) Could output this to csv...
 
     # #########################################################################
-    # #########################################################################
-    # #########################################################################
-    # #########################################################################
-    # Below here should be fine but needs to be tested
 
     print('Find top n similar -----------------------------------------------')
     print('Using discoGAN')
     # For each translation (AB and BA) find top n similarity (in B and A resp.)
     sim_disco, sim_vgg = {}, {}
     for ab in label_perms:
-        sim_disco[ab] = find_top_n_similar_dict(imgs_enc[ab], imgs_enc[ab[1]], n=topn)
+        sim_disco[ab] = find_top_n_similar(imgs_enc[ab], imgs_enc[ab[1]], n=topn)
 
     print('Using pretrained {}'.format(args.embedding_encoder))
     for a in domain_labs:
         for b in domain_labs:
             if a == b:
-                tmp = find_top_n_similar_dict(imgs_enc[b], imgs_enc[a], n=topn+1)
+                tmp = find_top_n_similar(imgs_enc[a], imgs_enc[b], n=topn+1)
                 sim_vgg[a+b] = dict_map(tmp, lambda v: v[:-1])
             else:
-                sim_vgg[a+b] = find_top_n_similar_dict(imgs_enc[b], imgs_enc[a], n=topn)
+                sim_vgg[a+b] = find_top_n_similar(imgs_enc[a], imgs_enc[b], n=topn)
 
     # Plot results nicely
     print('Plotting results -------------------------------------------------')
@@ -191,7 +185,7 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
         plot_all_outputs(sim_disco[ab],
                          [imgs_np[a], imgs_np[ab], imgs_np[b]],
                          src_style=str(ab),
-                         path=os.path.join(paths['topn'], d_nm, domain[a], model_arch))
+                         path=os.path.join(paths['topn'], domain[a], model_arch))
 
     # Plot top n similar using VGG results
     for ab in sim_vgg:
@@ -200,7 +194,7 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
         plot_all_outputs(sim_vgg[ab],
                          [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
                          src_style=str(ab),
-                         path=os.path.join(paths['topn'], d_nm, domain[a], 'vgg'))
+                         path=os.path.join(paths['topn'], domain[a], 'vgg'))
 
 
 def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, paths, enc_img_size):
@@ -225,26 +219,25 @@ def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, p
 
     dsize = (enc_img_size, enc_img_size)
 
-    paths['model'] = os.path.join(paths['model'], d_nm)
     topn_path = os.path.join(paths['topn'], 'single_img', model_arch)
     if not os.path.exists(topn_path):
         os.makedirs(topn_path)
 
     print('Reading images ---------------------------------------------------')
-    source_img_np = read_image(img_path, img_size)
+    source_img_np = read_image(paths['image'], img_size)
     source_img_np = np.expand_dims(source_img_np, 0)
     source_img = torch_cuda(source_img_np, cuda)
 
     img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
-    img_paths['A'].remove(img_path)
+    img_paths['A'].remove(paths['image'])
     imgs_np = dict_map(img_paths, lambda v: read_images(v, img_size))
 
     print('Loading generator ------------------------------------------------')
     generators = {}
-    task_names = [e for e in os.listdir(model_path) if img_class in e]
+    task_names = [e for e in os.listdir(paths['model']) if img_class in e]
 
     for i, nm in enumerate(task_names):
-        path = os.path.join(model_path, nm, model_arch)
+        path = os.path.join(paths['model'], nm, model_arch)
         A, B = nm.split('2')
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         if A == img_class:
@@ -274,10 +267,9 @@ def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, p
     imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, encoder))
 
     print('Find top n similar using discoGAN --------------------------------')
-    sim = {'A': find_top_n_similar_by_img_dict(torch.squeeze(img_src_enc), imgs_enc['A'], n=topn)}
+    sim = {'A': find_top_n_similar_by_img(torch.squeeze(img_src_enc), imgs_enc['A'], n=topn)}
     for k in img_trans_enc:
-        b = k[1]
-        sim[b] = find_top_n_similar_by_img_dict(torch.squeeze(img_trans_enc[k]), imgs_enc[b], n=topn)
+        sim[k[1]] = find_top_n_similar_by_img(torch.squeeze(img_trans_enc[k]), imgs_enc[k[1]], n=topn)
 
     sim_total = list((k, e) for k, v in sim.items() for e in v)
     topn_overall = sorted(sim_total, key=lambda kv: kv[1][1])[-topn:]
@@ -327,11 +319,13 @@ if __name__ == "__main__":
 
     model_arch = args.model_arch + str(args.image_size)
 
-    paths = {'model': args.model_path,
-             'image': args.image_path,
-             'topn': args.topn_path}
+    paths = {'model': os.path.join(args.model_path, args.domain),
+             'topn': os.path.join(args.topn_path, args.domain),
+             'image': args.image_path}
 
     if args.image_path:
+        if args.image_class not in domain_d[args.domain]:
+            raise ValueError
         single_image(img_class=args.image_class,
                      img_size=args.image_size,
                      topn=args.topn,
