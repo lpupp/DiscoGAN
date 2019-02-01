@@ -39,39 +39,6 @@ parser.add_argument('--update_interval', type=int, default=3, help='')
 parser.add_argument('--log_interval', type=int, default=50, help='Print loss values every log_interval iterations.')
 parser.add_argument('--image_save_interval', type=int, default=1000, help='Save test results every image_save_interval iterations.')
 parser.add_argument('--model_save_interval', type=int, default=10000, help='Save models every model_save_interval iterations.')
-#
-# def as_np(data):
-#     return data.cpu().data.numpy()
-#
-#
-# def get_data():
-#     if args.task_name == 'handbags2shoes' or args.task_name == 'shoes2handbags':
-#         data_A_1, data_A_2 = get_edge2photo_files(item='edges2handbags', test=False)
-#         test_A_1, test_A_2 = get_edge2photo_files(item='edges2handbags', test=True)
-#
-#         data_A = np.hstack([data_A_1, data_A_2])
-#         test_A = np.hstack([test_A_1, test_A_2])
-#
-#         data_B_1, data_B_2 = get_edge2photo_files(item='edges2shoes', test=False)
-#         test_B_1, test_B_2 = get_edge2photo_files(item='edges2shoes', test=True)
-#
-#         data_B = np.hstack([data_B_1, data_B_2])
-#         test_B = np.hstack([test_B_1, test_B_2])
-#
-#     elif args.task_name == 'tables2chairs' or args.task_name == 'chairs2tables':
-#         data_A_1, data_A_2 = get_furniture_files(item='tables', test=False)
-#         test_A_1, test_A_2 = get_furniture_files(item='tables', test=True)
-#
-#         data_A = np.hstack([data_A_1, data_A_2])
-#         test_A = np.hstack([test_A_1, test_A_2])
-#
-#         data_B_1, data_B_2 = get_furniture_files(item='seating', test=False)
-#         test_B_1, test_B_2 = get_furniture_files(item='seating', test=True)
-#
-#         data_B = np.hstack([data_B_1, data_B_2])
-#         test_B = np.hstack([test_B_1, test_B_2])
-#
-#     return data_A, data_B, test_A, test_B
 
 
 def get_fm_loss(real_feats, fake_feats, criterion):
@@ -289,14 +256,7 @@ def main():
                     os.makedirs(subdir_path)
 
                 for im_idx in range(n_testset):
-                    #A_val = test_A[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
-                    #B_val = test_B[im_idx].cpu().data.numpy().transpose(1,2,0) * 255.
-                    #BA_val = BA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    #ABA_val = ABA[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    #AB_val = AB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-                    #BAB_val = BAB[im_idx].cpu().data.numpy().transpose(1,2,0)* 255.
-
-                    filename_prefix = os.path.join (subdir_path, str(im_idx))
+                    filename_prefix = os.path.join(subdir_path, str(im_idx))
                     scipy.misc.imsave(filename_prefix + '.A.jpg', img4save(test_A[im_idx]))
                     scipy.misc.imsave(filename_prefix + '.B.jpg', img4save(test_B[im_idx]))
                     scipy.misc.imsave(filename_prefix + '.BA.jpg', img4save(BA[im_idx]))
