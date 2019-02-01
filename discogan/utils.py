@@ -176,6 +176,7 @@ def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
     dom = [e[0] for e in similar_ix]
     ixs = [e[1][0] for e in similar_ix]
     scores = [e[1][1] for e in similar_ix]
+    n_class = len(img_trans) + 1
 
     img_orig = img_src[0].transpose(1, 2, 0)
     imgs_tran = [v[0].transpose(1, 2, 0) for v in img_trans.values()]
@@ -190,11 +191,11 @@ def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
         img_save = ImageOps.expand(img_save, border=20, fill='white')
         draw = ImageDraw.Draw(img_save)
-        draw.text((33, 2), 'orig', col)
-        draw.text((33 + 64 + 32, 2), 'trans', col)
-        draw.text((200, 2), 'top {} recommendations'.format(n), col)
+        draw.text((20, 2), 'orig', col)
+        draw.text((20 + 64, 2), 'trans', col)
+        draw.text((20 + 64*(n_class), 2), 'top {} recommendations'.format(n), col)
         for i, sim in enumerate(similar_ix):
-            draw.text((64*(i+3)+20, 88), '({} {})'.format(ixs[i], round(scores[i], 3)), col)
+            draw.text((64*(i+n_class)+20, 88), '({} {})'.format(ixs[i], round(scores[i], 3)), col)
         img_save.save(os.path.join(path, filename))
 
     return img_out
@@ -233,8 +234,8 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
         img_save = ImageOps.expand(img_save, border=20, fill='white')
         draw = ImageDraw.Draw(img_save)
-        draw.text((33, 2), 'orig', col)
-        draw.text((33 + 64, 2), 'trans', col)
+        draw.text((20, 2), 'orig', col)
+        draw.text((20 + 64, 2), 'trans', col)
         draw.text((200, 2), 'top {} recommendations'.format(n), col)
         for i, sim in enumerate(similar_ix):
             draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
