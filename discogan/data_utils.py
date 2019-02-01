@@ -8,14 +8,9 @@ Created on Dec 18 2018
 
 import os
 import numpy as np
-#from dataset import *
 from glob import glob
 
-#import csv
 import cv2
-#import pandas as pd
-#from scipy.misc import imresize
-#import scipy.io
 
 #dataset_path = '/Users/lucagaegauf/Dropbox/GAN'
 dataset_path = 'C:\\Users\\lucag\\Dropbox\\GAN'
