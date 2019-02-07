@@ -1,4 +1,5 @@
 models/*
+final_models/*
 results/*
 top5
 datasets/*
