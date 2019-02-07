@@ -25,6 +25,7 @@ furniture_path = os.path.join(dataset_path, 'furniture')
 paths = {'handbags': os.path.join(fashion_path, 'handbags'),
          'shoes': os.path.join(fashion_path, 'shoes'),
          'belts': os.path.join(fashion_path, 'belts'),
+         'dresses': os.path.join(fashion_path, 'dresses'),
          'tables': os.path.join(furniture_path, 'tables'),
          'seating': os.path.join(furniture_path, 'seating'),
          'storage': os.path.join(furniture_path, 'storage'),
