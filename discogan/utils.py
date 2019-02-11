@@ -8,7 +8,6 @@ Created on Tue Dec 18 09:53:31 2018
 
 import cv2
 import numpy as np
-from dataset import *
 
 import math
 
