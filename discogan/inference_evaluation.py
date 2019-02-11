@@ -69,7 +69,7 @@ def create_nms(task_name, domain2label):
     return domain2label[B] + domain2label[A], domain2label[A] + domain2label[B]
 
 
-def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
+def eval_full_domain_set(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
     """Main TODO.
 
     Steps:
@@ -199,7 +199,7 @@ def main(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size)
                          path=os.path.join(paths['topn'], domain[a], 'vgg'))
 
 
-def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, paths, enc_img_size):
+def eval_single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, paths, enc_img_size):
     """single_image TODO.
 
     Steps:
@@ -290,13 +290,9 @@ def single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, p
     plot_overall(topn_overall, source_img_np, img_trans_np, imgs_np, img_ix=0, path=topn_path)
 
 
-if __name__ == "__main__":
-
-    global args
-    args = parser.parse_args()
+def main(args):
 
     cuda = args.cuda
-
     print('cuda: {}'.format(cuda))
 
     # TODO(lpupp) Do this in general
@@ -328,21 +324,28 @@ if __name__ == "__main__":
     if args.image_path:
         if args.image_class not in domain_d[args.domain]:
             raise ValueError
-        single_image(img_class=args.image_class,
-                     img_size=args.image_size,
-                     topn=args.topn,
-                     encoder=embedding_encoder,
-                     cuda=cuda,
-                     model_arch=model_arch,
-                     domain=args.domain,
-                     paths=paths,
-                     enc_img_size=enc_input_size)
+        eval_single_image(img_class=args.image_class,
+                          img_size=args.image_size,
+                          topn=args.topn,
+                          encoder=embedding_encoder,
+                          cuda=cuda,
+                          model_arch=model_arch,
+                          domain=args.domain,
+                          paths=paths,
+                          enc_img_size=enc_input_size)
     else:
-        main(cuda=cuda,
-             encoder=embedding_encoder,
-             model_arch=model_arch,
-             img_size=args.image_size,
-             topn=args.topn,
-             domain=args.domain,
-             paths=paths,
-             enc_img_size=enc_input_size)
+        eval_full_domain_set(cuda=cuda,
+                             encoder=embedding_encoder,
+                             model_arch=model_arch,
+                             img_size=args.image_size,
+                             topn=args.topn,
+                             domain=args.domain,
+                             paths=paths,
+                             enc_img_size=enc_input_size)
+
+
+if __name__ == "__main__":
+
+    global args
+    args = parser.parse_args()
+    main(args)
