@@ -247,6 +247,15 @@ def main():
                 print("RECON Loss:", as_np(recon_loss_A.mean()), as_np(recon_loss_B.mean()))
                 print("DIS Loss:", as_np(dis_loss_A.mean()), as_np(dis_loss_B.mean()))
 
+            # TODO(lpupp) add training plots:
+            # [ ] loss: 1) each separately, 2) g vs d loss
+            # [ ] top 3 singular values of each weighting matrix (compute with alrnoldi iteration method) (see bigGAN)
+            # [ ] probability distribution (see discogan)
+            # The colored background: output value of the discriminator,
+            # Black 'x's: different modes in B domain,
+            # Colored circles: mapped samples of domain A to domain B, where
+            #                  each color corresponds to a different mode.
+
             if iters % args.image_save_interval == 0:
                 AB = generator_B(test_A)
                 BA = generator_A(test_B)
