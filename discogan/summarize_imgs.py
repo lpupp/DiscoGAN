@@ -8,14 +8,17 @@ Created on Feb 12 2019
 
 import os
 import argparse
-import cv2
+# import cv2
 import numpy as np
 
-from PIL import Image, ImageChops, ImageOps, ImageDraw  # ImageFont
+from PIL import Image, ImageOps, ImageDraw
 
 from glob import glob
 
-#from data_utils import as_np, read_image
+# TODO:
+# [ ] test trim_border
+# [ ] test drop_src_image
+# [ ] where do we need to pass in args?
 
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
@@ -25,15 +28,6 @@ parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the pa
 parser.add_argument('--domain', type=str, default='fashion', help='Set domain name')
 parser.add_argument('--task', type=str, default=None, help='Set domain categories.')
 parser.add_argument('--image_size', type=int, default=64, help='Original input image dimension.')
-
-
-# def trim(img):
-#     bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
-#     diff = ImageChops.difference(img, bg)
-#     diff = ImageChops.add(diff, diff, 2.0, -100)
-#     bbox = diff.getbbox()
-#     if bbox:
-#         return img.crop(bbox)
 
 
 def trim_border(img):
