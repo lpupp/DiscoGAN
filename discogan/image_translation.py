@@ -13,8 +13,15 @@ import scipy
 import scipy.misc
 from progressbar import ETA, Bar, Percentage, ProgressBar
 
+def add_bool_arg(parser, name, default=False):
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('--' + name, dest=name, action='store_true')
+    group.add_argument('--no_' + name, dest=name, action='store_false')
+    parser.set_defaults(**{name: default})
+
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
-parser.add_argument('--cuda', type=bool, default=True, help='Set cuda usage')
+add_bool_arg(parser, 'cuda')
+
 parser.add_argument('--task_name', type=str, default='handbags2shoes', help='Set data name')
 parser.add_argument('--epoch_size', type=int, default=5000, help='Set epoch size')
 parser.add_argument('--batch_size', type=int, default=256, help='Set batch size')
