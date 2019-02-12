@@ -1,23 +1,30 @@
 import os
 import argparse
 from itertools import chain
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-#from dataset import *
+
 from data_utils import *
 from model import *
+
 import scipy
 import scipy.misc
+
+import matplotlib.pyplot as plt
+
 from progressbar import ETA, Bar, Percentage, ProgressBar
+
 
 def add_bool_arg(parser, name, default=False):
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--' + name, dest=name, action='store_true')
     group.add_argument('--no_' + name, dest=name, action='store_false')
     parser.set_defaults(**{name: default})
+
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 add_bool_arg(parser, 'cuda')
@@ -28,6 +35,7 @@ parser.add_argument('--batch_size', type=int, default=256, help='Set batch size'
 parser.add_argument('--learning_rate', type=float, default=0.0002, help='Set learning rate for optimizer')
 parser.add_argument('--result_path', type=str, default='./results/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
+parser.add_argument('--plot_path', type=str, default='./output/plots/', help='Set the path the result images will be saved.')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--load_iter', type=float, default=-999., help='load iteration suffix')
@@ -44,6 +52,7 @@ parser.add_argument('--n_test', type=int, default=200, help='Number of test data
 
 parser.add_argument('--update_interval', type=int, default=3, help='')
 parser.add_argument('--log_interval', type=int, default=50, help='Print loss values every log_interval iterations.')
+parser.add_argument('--plot_interval', type=int, default=50, help='Print loss values every log_interval iterations.')
 parser.add_argument('--image_save_interval', type=int, default=1000, help='Save test results every image_save_interval iterations.')
 parser.add_argument('--model_save_interval', type=int, default=10000, help='Save models every model_save_interval iterations.')
 
@@ -102,6 +111,11 @@ def main():
         result_path = os.path.join(result_path, args.style_A)
     result_path = os.path.join(result_path, args.model_arch + str(args.image_size))
 
+    plot_path = os.path.join(args.plot_path, d_nm, task_name)
+    if args.style_A:
+        plot_path = os.path.join(plot_path, args.style_A)
+    plot_path = os.path.join(plot_path, args.model_arch + str(args.image_size))
+
     model_path = os.path.join(args.model_path, d_nm, task_name)
     if args.style_A:
         model_path = os.path.join(model_path, args.style_A)
@@ -157,8 +171,10 @@ def main():
 
     iters = 0
 
-    gen_loss_total = []
-    dis_loss_total = []
+    GEN_loss, GEN_loss_A, GEN_loss_B = [], [], []
+    FM_loss_A, FM_loss_B = [], []
+    RECON_loss_A, RECON_loss_B = [], []
+    DIS_loss, DIS_loss_A, DIS_loss_B = [], [], []
 
     for epoch in range(epoch_size):
         data_style_A, data_style_B = shuffle_data(data_style_A, data_style_B)
@@ -240,6 +256,17 @@ def main():
                 gen_loss.backward()
                 optim_gen.step()
 
+            GEN_loss.append(as_np(gen_loss.mean()))
+            GEN_loss_A.append(as_np(gen_loss_A.mean()))
+            GEN_loss_B.append(s_np(gen_loss_B.mean()))
+            FM_loss_A.append(as_np(fm_loss_A.mean()))
+            FM_loss_B.append(as_np(fm_loss_B.mean()))
+            RECON_loss_A.append(as_np(recon_loss_A.mean()))
+            RECON_loss_B.append(as_np(recon_loss_B.mean()))
+            DIS_loss.append(as_np(dis_loss.mean()))
+            DIS_loss_A.append(as_np(dis_loss_A.mean()))
+            DIS_loss_B.append(as_np(dis_loss_B.mean()))
+
             if iters % args.log_interval == 0:
                 print("---------------------")
                 print("GEN Loss:", as_np(gen_loss_A.mean()), as_np(gen_loss_B.mean()))
@@ -247,8 +274,28 @@ def main():
                 print("RECON Loss:", as_np(recon_loss_A.mean()), as_np(recon_loss_B.mean()))
                 print("DIS Loss:", as_np(dis_loss_A.mean()), as_np(dis_loss_B.mean()))
 
+            if iters % args.plot_interval == 0:
+                plt.figure()
+                plt.plot(list(range(iters)), GEN_loss, 'r', label='G')
+                plt.plot(list(range(iters)), GEN_loss_A, 'r-.', label='G_A')
+                plt.plot(list(range(iters)), GEN_loss_B, 'r--', label='G_B')
+                plt.plot(list(range(iters)), FM_loss_A, 'b-.', label='FM_A')
+                plt.plot(list(range(iters)), FM_loss_B, 'b--', label='FM_B')
+                plt.plot(list(range(iters)), RECON_loss_A, 'g-.', label='recon_A')
+                plt.plot(list(range(iters)), RECON_loss_B, 'g--', label='recon_B')
+                plt.plot(list(range(iters)), DIS_loss, 'y', label='D')
+                plt.plot(list(range(iters)), DIS_loss_A, 'y-.', label='D_A')
+                plt.plot(list(range(iters)), DIS_loss_B, 'y--', label='D_B')
+                plt.xlabel('iterations')
+                plt.ylabel('loss')
+                plt.legend()
+                #plt.title('')
+                #plt.tight_layout()
+                plt.savefig(os.path.join(plot_path, 'loss-' + str((iters / args.model_save_interval) + load_iter) + '.pdf'))
+                plt.close()
+
             # TODO(lpupp) add training plots:
-            # [ ] loss: 1) each separately, 2) g vs d loss
+            # [X] loss: 1) each separately, 2) g vs d loss
             # [ ] top 3 singular values of each weighting matrix (compute with alrnoldi iteration method) (see bigGAN)
             # [ ] probability distribution (see discogan)
             # The colored background: output value of the discriminator,
