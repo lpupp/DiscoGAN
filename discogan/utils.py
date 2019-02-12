@@ -205,7 +205,7 @@ def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
 
 
 def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
-    """Plot top n recommendations for each categories individually."""
+    """Plot top n recommendations for each category individually."""
     similar_ix.reverse()
     ixs = [e[0] for e in similar_ix]
     scores = [e[1] for e in similar_ix]
