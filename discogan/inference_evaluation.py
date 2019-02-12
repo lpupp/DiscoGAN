@@ -26,7 +26,7 @@ parser.add_argument('--domain', type=str, default='fashion', help='Set data doma
 parser.add_argument('--topn', type=int, default=5, help='load iteration suffix')
 
 parser.add_argument('--model_path', type=str, default='./final_models/', help='Set the path for trained models')
-parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
+parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the topn images will be saved')
 
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
 parser.add_argument('--model_arch', type=str, default='discogan', help='choose among gan/recongan/discogan. gan - standard GAN, recongan - GAN with reconstruction, discogan - DiscoGAN.')
@@ -291,11 +291,7 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
         out = []
         n_mb = math.ceil(len(v)/batch_size)
         for i in range(n_mb):
-            try:
-                dt = read_images(v[i * batch_size: (i+1) * batch_size], dsize[0])
-            except:
-                print('except active')
-                dt = read_images(v[i * batch_size:], dsize[0])
+            dt = read_images(v[i * batch_size: (i+1) * batch_size], dsize[0])
             dt = torch_cuda(dt, cuda)
             out.append(encoder(dt))
         all_imgs_enc[k] = torch.cat(out, dim=0)
