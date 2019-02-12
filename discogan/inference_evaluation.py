@@ -2,6 +2,7 @@ import os
 import argparse
 from itertools import product
 
+import random
 import torch
 import torch.nn as nn
 import torchvision.models as models
@@ -32,6 +33,9 @@ parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choo
 
 parser.add_argument('--image_path', type=str, default=None, help='If provided, single_image will be execute, else main. Path to image.')
 parser.add_argument('--image_class', type=str, default=None, help='Class to with image_path image belongs. E.g. shoes')
+
+parser.add_argument('--eval_sample', type=str, default='out', help='Evaluate on `in` or `out`-of-sample data.')
+parser.add_argument('--seed', type=int, default=0, help='Random seed')
 
 # TODO (lpupp) remove. bad idea -- loads all of the nets
 #txt2model = {'alexnet': models.alexnet(pretrained=True),
@@ -69,7 +73,7 @@ def create_nms(task_name, domain2label):
     return domain2label[B] + domain2label[A], domain2label[A] + domain2label[B]
 
 
-def eval_full_domain_set(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
+def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
     """Main TODO.
 
     Steps:
@@ -100,7 +104,7 @@ def eval_full_domain_set(cuda, encoder, model_arch, img_size, topn, domain, path
     dsize = (enc_img_size, enc_img_size)
 
     for nm in domain.values():
-        topn_path = os.path.join(paths['topn'], nm, model_arch)
+        topn_path = os.path.join(paths['topn'], nm, 'out', model_arch)
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
         topn_path = os.path.join(paths['topn'], nm, 'vgg')
@@ -111,7 +115,6 @@ def eval_full_domain_set(cuda, encoder, model_arch, img_size, topn, domain, path
 
     print('Reading images ---------------------------------------------------')
     imgs = dict_map(img_paths, lambda v: read_images(v, img_size))
-    n_imgs = dict_map(imgs, lambda v: v.shape[0])
     imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
 
     print('Loading generator ------------------------------------------------')
@@ -197,6 +200,168 @@ def eval_full_domain_set(cuda, encoder, model_arch, img_size, topn, domain, path
                          [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
                          src_style=str(ab),
                          path=os.path.join(paths['topn'], domain[a], 'vgg'))
+
+
+def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
+    """TODO."""
+
+    d_nm = domain
+    domain_set = domain_d[d_nm]
+    domain_labs = letters[:len(domain_set)]
+
+    domain = dict((k, v) for k, v in zip(domain_labs, domain_set))
+    domain2lab = dict((v, k) for k, v in domain.items())
+
+    label_perms = [i + j for i, j in product(domain_labs, domain_labs) if i != j]
+
+    dsize = (enc_img_size, enc_img_size)
+
+    for nm in domain.values():
+        topn_path = os.path.join(paths['topn'], nm, 'in', model_arch)
+        if not os.path.exists(topn_path):
+            os.makedirs(topn_path)
+        #topn_path = os.path.join(paths['topn'], nm, 'vgg')
+        #if not os.path.exists(topn_path):
+        #    os.makedirs(topn_path)
+
+    def train_val_photos(v):
+        train, val = get_photo_files(v)
+        return train + val
+
+    all_img_paths = dict_map(domain, lambda v: train_val_photos(v))
+    img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
+
+    print('Reading images ---------------------------------------------------')
+    imgs = dict_map(img_paths, lambda v: read_images(v, img_size))
+    imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
+
+    all_imgs = dict_map(all_img_paths, lambda v: read_images(v, img_size))
+    #all_imgs = dict_map(all_imgs, lambda v: torch_cuda(v, cuda))
+
+    print('Loading generator ------------------------------------------------')
+    generators = {}
+    task_names = [e for e in os.listdir(paths['model']) if '2' in e]
+    task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
+
+    for i, nm in enumerate(task_names):
+        path = os.path.join(paths['model'], nm, model_arch)
+        ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
+        A_nm, B_nm = create_nms(nm, domain2lab)
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))
+
+    # translate all images (A and B)
+    print('Translating images -----------------------------------------------')
+    for ab in label_perms:
+        print('{} to {}'.format(ab[0], ab[1]))
+        imgs[ab] = generators[ab](imgs[ab[0]])
+
+    # #########################################################################
+    # TODO(lpupp) Is there around this? #######################################
+    # The problem is the transform crap
+    # Why do I need the transform stuff? because the encoder dimension expects
+    # a different sized input.
+
+    # Normalize all inputs to embedding_encoder
+    #normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                                             std=[0.229, 0.224, 0.225])
+    #tfs = torchvision.transforms.Compose([
+    #        torchvision.transforms.ToPILImage(),
+    #        torchvision.transforms.Resize(dsize, interpolation=2),
+    #        torchvision.transforms.ToTensor(),
+    #        normalize
+    #        ])
+
+    # TODO (lpupp) Is there a way around this song and dance?
+    print('Converting and resizing image tensors to numpy -------------------')
+    imgs_np = dict_map(imgs, lambda v: as_np(v))
+    imgs_enc = dict_map(imgs_np, lambda v: resize_array_of_images(v, dsize))
+    imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
+
+    all_imgs_enc = dict_map(all_imgs, lambda v: resize_array_of_images(v, dsize))
+    all_imgs_enc = dict_map(all_imgs_enc, lambda v: torch_cuda(v, cuda))
+
+    # Encode all translated images (A, B, AB and BA)
+    print('Encoding images --------------------------------------------------')
+    imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, encoder))
+    print(dict_map(imgs_enc, lambda v: v.shape))
+
+    all_imgs_enc = dict_map(all_imgs_enc, lambda v: minibatch_call(v, encoder))
+    print(dict_map(all_imgs_enc, lambda v: v.shape))
+    # TODO (lpupp) Could output this to csv...
+
+    # #########################################################################
+
+    print('Find top n similar -----------------------------------------------')
+    print('Using discoGAN')
+    # For each translation (AB and BA) find top n similarity (in B and A resp.)
+    sim_disco, sim_vgg = {}, {}
+    for ab in label_perms:
+        sim_disco[ab] = find_top_n_similar(imgs_enc[ab], all_imgs_enc[ab[1]], n=topn)
+
+    # TODO(lpupp) We don't need this comparison... do we?
+    #print('Using pretrained {}'.format(args.embedding_encoder))
+    #for a in domain_labs:
+    #    for b in domain_labs:
+    #        if a == b:
+    #            tmp = find_top_n_similar(imgs_enc[a], all_imgs_enc[b], n=topn+1)
+    #            sim_vgg[a+b] = dict_map(tmp, lambda v: v[:-1])
+    #        else:
+    #            sim_vgg[a+b] = find_top_n_similar(imgs_enc[a], all_imgs_enc[b], n=topn)
+
+    # Plot results nicely
+    print('Plotting results -------------------------------------------------')
+    # Plot top n similar using discogan results
+    for ab in label_perms:
+        print(ab)
+        a, b = ab[0], ab[1]
+        plot_all_outputs(sim_disco[ab],
+                         [imgs_np[a], imgs_np[ab], imgs_np[b]],
+                         src_style=str(ab),
+                         path=os.path.join(paths['topn'], domain[a], model_arch))
+
+    # Plot top n similar using VGG results
+    #for ab in sim_vgg:
+    #    print(ab)
+    #    a, b = ab[0], ab[1]
+    #    plot_all_outputs(sim_vgg[ab],
+    #                     [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
+    #                     src_style=str(ab),
+    #                     path=os.path.join(paths['topn'], domain[a], 'vgg'))
+
+
+def eval_random(topn, domain, paths):
+    """TODO."""
+
+    d_nm = domain
+    domain_set = domain_d[d_nm]
+    domain_labs = letters[:len(domain_set)]
+
+    domain = dict((k, v) for k, v in zip(domain_labs, domain_set))
+
+    for nm in domain.values():
+        topn_path = os.path.join(paths['topn'], nm, 'random')
+        if not os.path.exists(topn_path):
+            os.makedirs(topn_path)
+
+    all_img_paths = dict_map(domain, lambda v: train_val_photos(v))
+
+    print('Reading images ---------------------------------------------------')
+    all_imgs = dict_map(all_img_paths, lambda v: read_images(v, img_size))
+
+    # Plot results nicely
+    print('Plotting results -------------------------------------------------')
+    # Plot top n similar using discogan results
+    # TODO(lpupp) test
+    random_ixs = dict_map(all_imgs, lambda v: random.sample(list(range(v.shape[0])), topn))
+    for ab in sim_vgg:
+        print(ab)
+        a, b = ab[0], ab[1]
+        if a != b:
+            plot_all_outputs(random_ixs[ab],
+                             [all_imgs[a], np.ones_like(all_imgs[a]), all_imgs[b]],
+                             src_style=str(ab),
+                             path=os.path.join(paths['topn'], domain[a], 'random'))
 
 
 def eval_single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, paths, enc_img_size):
@@ -333,15 +498,31 @@ def main(args):
                           domain=args.domain,
                           paths=paths,
                           enc_img_size=enc_input_size)
+    elif args.eval_sample == 'out':
+        eval_full_domain_set_out(cuda=cuda,
+                                 encoder=embedding_encoder,
+                                 model_arch=model_arch,
+                                 img_size=args.image_size,
+                                 topn=args.topn,
+                                 domain=args.domain,
+                                 paths=paths,
+                                 enc_img_size=enc_input_size)
+    elif args.eval_sample == 'in':
+        eval_full_domain_set_in(cuda=cuda,
+                                encoder=embedding_encoder,
+                                model_arch=model_arch,
+                                img_size=args.image_size,
+                                topn=args.topn,
+                                domain=args.domain,
+                                paths=paths,
+                                enc_img_size=enc_input_size)
+    elif args.eval_sample == 'random':
+        random.seed(args.seed)
+        eval_random(topn=args.topn,
+                    domain=args.domain,
+                    paths=paths)
     else:
-        eval_full_domain_set(cuda=cuda,
-                             encoder=embedding_encoder,
-                             model_arch=model_arch,
-                             img_size=args.image_size,
-                             topn=args.topn,
-                             domain=args.domain,
-                             paths=paths,
-                             enc_img_size=enc_input_size)
+        raise ValueError
 
 
 if __name__ == "__main__":
