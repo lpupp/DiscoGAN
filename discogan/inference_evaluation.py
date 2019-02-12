@@ -111,10 +111,10 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
     dsize = (enc_img_size, enc_img_size)
 
     for nm in domain.values():
-        topn_path = os.path.join(paths['topn'], nm, 'out', model_arch)
+        topn_path = os.path.join(paths['topn'], nm, model_arch, '_out')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
-        topn_path = os.path.join(paths['topn'], nm, 'vgg')
+        topn_path = os.path.join(paths['topn'], nm, 'vgg_out')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
 
@@ -196,7 +196,7 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
         plot_all_outputs(sim_disco[ab],
                          [imgs_np[a], imgs_np[ab], imgs_np[b]],
                          src_style=str(ab),
-                         path=os.path.join(paths['topn'], domain[a], model_arch))
+                         path=os.path.join(paths['topn'], domain[a], model_arch + '_out'))
 
     # Plot top n similar using VGG results
     for ab in sim_vgg:
@@ -205,7 +205,7 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
         plot_all_outputs(sim_vgg[ab],
                          [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
                          src_style=str(ab),
-                         path=os.path.join(paths['topn'], domain[a], 'vgg'))
+                         path=os.path.join(paths['topn'], domain[a], 'vgg_out'))
 
 
 def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
@@ -223,10 +223,10 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     dsize = (enc_img_size, enc_img_size)
 
     for nm in domain.values():
-        topn_path = os.path.join(paths['topn'], nm, 'in', model_arch)
+        topn_path = os.path.join(paths['topn'], nm, model_arch + '_in')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
-        #topn_path = os.path.join(paths['topn'], nm, 'vgg')
+        #topn_path = os.path.join(paths['topn'], nm, 'vgg_in')
         #if not os.path.exists(topn_path):
         #    os.makedirs(topn_path)
 
@@ -331,7 +331,7 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
         plot_all_outputs(sim_disco[ab],
                          [imgs_np[a], imgs_np[ab], imgs_np[b]],
                          src_style=str(ab),
-                         path=os.path.join(paths['topn'], domain[a], model_arch))
+                         path=os.path.join(paths['topn'], domain[a], model_arch + '_in'))
 
     # Plot top n similar using VGG results
     #for ab in sim_vgg:
@@ -340,7 +340,7 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     #    plot_all_outputs(sim_vgg[ab],
     #                     [imgs_np[a], np.ones_like(imgs_np[a]), imgs_np[b]],
     #                     src_style=str(ab),
-    #                     path=os.path.join(paths['topn'], domain[a], 'vgg'))
+    #                     path=os.path.join(paths['topn'], domain[a], 'vgg_in'))
 
 
 def eval_random(img_size, topn, domain, paths):
