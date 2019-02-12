@@ -330,37 +330,40 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
 
 
 def eval_random(img_size, topn, domain, paths):
-    """TODO."""
-
+    """Plot n random for discogan benchline."""
     d_nm = domain
     domain_set = domain_d[d_nm]
     domain_labs = letters[:len(domain_set)]
 
     domain = dict((k, v) for k, v in zip(domain_labs, domain_set))
 
+    label_perms = [i + j for i, j in product(domain_labs, domain_labs) if i != j]
+
     for nm in domain.values():
         topn_path = os.path.join(paths['topn'], nm, 'random')
         if not os.path.exists(topn_path):
             os.makedirs(topn_path)
 
+    img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
     all_img_paths = dict_map(domain, lambda v: train_val_photos(v))
+    n_imgs = dict_map(img_paths, lambda v: len(v))
+    n_all_imgs = dict_map(all_img_paths, lambda v: len(v))
 
-    print('Reading images ---------------------------------------------------')
-    all_imgs = dict_map(all_img_paths, lambda v: read_images(v, img_size))
-
-    # Plot results nicely
     print('Plotting results -------------------------------------------------')
-    # Plot top n similar using discogan results
-    # TODO(lpupp) test
-    random_ixs = dict_map(all_imgs, lambda v: random.sample(list(range(v.shape[0])), topn))
-    for ab in sim_vgg:
+    random_ixs = {}
+    for ab in label_perms:
+        random_ixs.setdefault(ab, {})
+        brange = list(range(n_all_imgs[ab[1]]))
+        for k in range(n_imgs[ab[0]]):
+            random_ixs[ab][k] = random.sample(brange, topn)
+
+    for ab in random_ixs:
         print(ab)
         a, b = ab[0], ab[1]
-        if a != b:
-            plot_all_outputs(random_ixs[ab],
-                             [all_imgs[a], np.ones_like(all_imgs[a]), all_imgs[b]],
-                             src_style=str(ab),
-                             path=os.path.join(paths['topn'], domain[a], 'random'))
+        plot_all_random(random_ixs[ab], img_paths[a], all_img_paths[b],
+                        img_size=img_size,
+                        src_style=str(ab),
+                        path=os.path.join(paths['topn'], domain[a], 'random'))
 
 
 def eval_single_image(img_class, img_size, topn, encoder, cuda, model_arch, domain, paths, enc_img_size):
