@@ -34,7 +34,7 @@ parser.add_argument('--embedding_encoder', type=str, default='vgg19', help='choo
 parser.add_argument('--image_path', type=str, default=None, help='If provided, single_image will be execute, else main. Path to image.')
 parser.add_argument('--image_class', type=str, default=None, help='Class to with image_path image belongs. E.g. shoes')
 
-parser.add_argument('--eval_sample', type=str, default='out', help='Evaluate on `in` or `out`-of-sample data.')
+parser.add_argument('--eval_task', type=str, default='out', help='Evaluate on `in` or `out`-of-sample data, `random` for random, or `single` for single image eval.')
 parser.add_argument('--seed', type=int, default=0, help='Random seed')
 
 # TODO (lpupp) remove. bad idea -- loads all of the nets
@@ -484,19 +484,22 @@ def main(args):
              'topn': os.path.join(args.topn_path, args.domain),
              'image': args.image_path}
 
-    if args.image_path:
-        if args.image_class not in domain_d[args.domain]:
+    if args.eval_task == 'single':
+        if args.image_path:
+            if args.image_class not in domain_d[args.domain]:
+                raise ValueError
+            eval_single_image(img_class=args.image_class,
+                              img_size=args.image_size,
+                              topn=args.topn,
+                              encoder=embedding_encoder,
+                              cuda=cuda,
+                              model_arch=model_arch,
+                              domain=args.domain,
+                              paths=paths,
+                              enc_img_size=enc_input_size)
+        else:
             raise ValueError
-        eval_single_image(img_class=args.image_class,
-                          img_size=args.image_size,
-                          topn=args.topn,
-                          encoder=embedding_encoder,
-                          cuda=cuda,
-                          model_arch=model_arch,
-                          domain=args.domain,
-                          paths=paths,
-                          enc_img_size=enc_input_size)
-    elif args.eval_sample == 'out':
+    elif args.eval_task == 'out':
         eval_full_domain_set_out(cuda=cuda,
                                  encoder=embedding_encoder,
                                  model_arch=model_arch,
@@ -505,7 +508,7 @@ def main(args):
                                  domain=args.domain,
                                  paths=paths,
                                  enc_img_size=enc_input_size)
-    elif args.eval_sample == 'in':
+    elif args.eval_task == 'in':
         eval_full_domain_set_in(cuda=cuda,
                                 encoder=embedding_encoder,
                                 model_arch=model_arch,
@@ -514,7 +517,7 @@ def main(args):
                                 domain=args.domain,
                                 paths=paths,
                                 enc_img_size=enc_input_size)
-    elif args.eval_sample == 'random':
+    elif args.eval_task == 'random':
         random.seed(args.seed)
         eval_random(topn=args.topn,
                     domain=args.domain,
