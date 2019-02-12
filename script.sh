@@ -15,28 +15,32 @@
 
 # Training ---------------------------------------------
 # Run fashion
-#python ./discogan/image_translation.py --task_name=handbags2belts --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
-#python ./discogan/image_translation.py --task_name=belts2shoes --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
-#python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
+#python ./discogan/image_translation.py --task_name=handbags2belts --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=belts2shoes --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=dresses2belts --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=dresses2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=shoes2dresses --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+
 
 # Run furniture
-#python ./discogan/image_translation.py --task_name=tables2seating --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
-#python ./discogan/image_translation.py --task_name=seating2storage --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
-#python ./discogan/image_translation.py --task_name=storage2tables --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000
+#python ./discogan/image_translation.py --task_name=tables2seating --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=seating2storage --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=storage2tables --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
 
 # Evaluation -------------------------------------------
 # Run eval (out-of-sample)
-#python discogan/inference_evaluation.py
-#python discogan/inference_evaluation.py --domain furniture
+#python discogan/inference_evaluation.py --cuda
+#python discogan/inference_evaluation.py --domain furniture --cuda
 
 # Run eval (in-sample)
-#python discogan/inference_evaluation.py --eval_task in
-#python discogan/inference_evaluation.py --domain furniture --eval_task in
+python discogan/inference_evaluation.py --eval_task in --cuda
+python discogan/inference_evaluation.py --domain furniture --eval_task in --cuda
 
 # Run eval (single image)
 #python discogan/inference_evaluation.py --image_path C:\Users\lucag\Dropbox\GAN\fashion\shoes\val\2_AB.jpg --image_class shoes
 #python discogan/inference_evaluation.py --domain furniture --image_path C:\Users\lucag\Dropbox\GAN\furniture\tables\convito_5_1_sq.jpg --image_class tables
 
 # Run eval (random)
-python discogan/inference_evaluation.py --eval_task random
-python discogan/inference_evaluation.py --domain furniture --eval_task random
+#python discogan/inference_evaluation.py --eval_task random
+#python discogan/inference_evaluation.py --domain furniture --eval_task random
