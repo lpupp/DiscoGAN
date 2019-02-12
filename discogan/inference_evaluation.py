@@ -23,7 +23,7 @@ add_bool_arg(parser, 'cuda')
 parser.add_argument('--domain', type=str, default='fashion', help='Set data domain. Choose among `fashion` or `furniture`')
 parser.add_argument('--topn', type=int, default=5, help='load iteration suffix')
 
-parser.add_argument('--model_path', type=str, default='./models/', help='Set the path for trained models')
+parser.add_argument('--model_path', type=str, default='./final_models/', help='Set the path for trained models')
 parser.add_argument('--topn_path', type=str, default='./top5/', help='Set the path the top5 images will be saved')
 
 parser.add_argument('--image_size', type=int, default=64, help='Image size. 64 for every experiment in the paper')
@@ -120,14 +120,13 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
     print('Loading generator ------------------------------------------------')
     generators = {}
     task_names = [e for e in os.listdir(paths['model']) if '2' in e]
-    task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
 
     for i, nm in enumerate(task_names):
         path = os.path.join(paths['model'], nm, model_arch)
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         A_nm, B_nm = create_nms(nm, domain2lab)
-        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))
-        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)), map_location={'cuda:0': 'cpu'})
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)), map_location={'cuda:0': 'cpu'})
 
     # translate all images (A and B)
     print('Translating images -----------------------------------------------')
@@ -241,14 +240,13 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     print('Loading generator ------------------------------------------------')
     generators = {}
     task_names = [e for e in os.listdir(paths['model']) if '2' in e]
-    task_names = [e for e in task_names if domain['A'] in e or domain['B'] in e]
 
     for i, nm in enumerate(task_names):
         path = os.path.join(paths['model'], nm, model_arch)
         ix = max([float(e.split('-')[1]) for e in os.listdir(path) if 'model_gen' in e])
         A_nm, B_nm = create_nms(nm, domain2lab)
-        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)))
-        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)))
+        generators[A_nm] = torch.load(os.path.join(path, 'model_gen_A-' + str(ix)), map_location={'cuda:0': 'cpu'})
+        generators[B_nm] = torch.load(os.path.join(path, 'model_gen_B-' + str(ix)), map_location={'cuda:0': 'cpu'})
 
     # translate all images (A and B)
     print('Translating images -----------------------------------------------')
