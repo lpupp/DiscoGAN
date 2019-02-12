@@ -6,6 +6,7 @@ Created on Tue Dec 18 09:53:31 2018
 @author: lpupp
 """
 
+import os
 import cv2
 import numpy as np
 
