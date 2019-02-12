@@ -1,8 +1,10 @@
 import os
+
 import argparse
+import time
+import random
 from itertools import product
 
-import random
 import torch
 import torch.nn as nn
 import torchvision.models as models
@@ -233,10 +235,8 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
 
     print('Reading images ---------------------------------------------------')
     imgs = dict_map(img_paths, lambda v: read_images(v, img_size))
-    imgs = dict_map(imgs, lambda v: torch_cuda(v, cuda))
-
-    all_imgs = dict_map(all_img_paths, lambda v: read_images(v, img_size))
-    #all_imgs = dict_map(all_imgs, lambda v: torch_cuda(v, cuda))
+    # cuda = False so the generators don't use up all the memory
+    imgs = dict_map(imgs, lambda v: torch_cuda(v, False))
 
     print('Loading generator ------------------------------------------------')
     generators = {}
@@ -277,15 +277,29 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     imgs_enc = dict_map(imgs_np, lambda v: resize_array_of_images(v, dsize))
     imgs_enc = dict_map(imgs_enc, lambda v: torch_cuda(v, cuda))
 
-    all_imgs_enc = dict_map(all_imgs, lambda v: resize_array_of_images(v, dsize))
-    all_imgs_enc = dict_map(all_imgs_enc, lambda v: torch_cuda(v, cuda))
-
     # Encode all translated images (A, B, AB and BA)
     print('Encoding images --------------------------------------------------')
+
     imgs_enc = dict_map(imgs_enc, lambda v: minibatch_call(v, encoder))
     print(dict_map(imgs_enc, lambda v: v.shape))
 
-    all_imgs_enc = dict_map(all_imgs_enc, lambda v: minibatch_call(v, encoder))
+    batch_size = 32
+    all_imgs_enc = {}
+    for k, v in all_img_paths.items():
+        t_start = time.time()
+        print('encoding all_imgs', k)
+        out = []
+        n_mb = math.ceil(len(v)/batch_size)
+        for i in range(n_mb):
+            try:
+                dt = read_images(v[i * batch_size: (i+1) * batch_size], dsize[0])
+            except:
+                print('except active')
+                dt = read_images(v[i * batch_size:], dsize[0])
+            dt = torch_cuda(dt, cuda)
+            out.append(encoder(dt))
+        all_imgs_enc[k] = torch.cat(out, dim=0)
+        print('time {}', time.time() - t_start)
     print(dict_map(all_imgs_enc, lambda v: v.shape))
     # TODO (lpupp) Could output this to csv...
 
