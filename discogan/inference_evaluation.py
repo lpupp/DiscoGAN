@@ -73,6 +73,11 @@ def create_nms(task_name, domain2label):
     return domain2label[B] + domain2label[A], domain2label[A] + domain2label[B]
 
 
+def train_val_photos(v):
+    train, val = get_photo_files(v)
+    return train + val
+
+
 def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
     """Main TODO.
 
@@ -222,10 +227,6 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
         #topn_path = os.path.join(paths['topn'], nm, 'vgg')
         #if not os.path.exists(topn_path):
         #    os.makedirs(topn_path)
-
-    def train_val_photos(v):
-        train, val = get_photo_files(v)
-        return train + val
 
     all_img_paths = dict_map(domain, lambda v: train_val_photos(v))
     img_paths = dict_map(domain, lambda v: get_photo_files(v)[1])
