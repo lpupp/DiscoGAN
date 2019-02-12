@@ -174,7 +174,7 @@ def find_top_n_similar_by_img(embed, db_embeds, n=1):
     return sorted(sim.items(), key=lambda kv: kv[1])[-n:]
 
 
-def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
+def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None, labs=True):
     """Plot top n recommendations across all comparison categories."""
     similar_ix.reverse()
     dom = [e[0] for e in similar_ix]
@@ -193,19 +193,20 @@ def plot_overall(similar_ix, img_src, img_trans, img_db, img_ix=0, path=None):
         filename = str(img_ix) + 'all.jpg'
 
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
-        img_save = ImageOps.expand(img_save, border=20, fill='white')
-        draw = ImageDraw.Draw(img_save)
-        draw.text((20, 2), 'orig', col)
-        draw.text((20 + 64, 2), 'trans', col)
-        draw.text((20 + 64*(n_class), 2), 'top {} recommendations'.format(n), col)
-        for i, sim in enumerate(similar_ix):
-            draw.text((64*(i+n_class)+20, 88), '({} {})'.format(ixs[i], round(scores[i], 3)), col)
+        if labs:
+            img_save = ImageOps.expand(img_save, border=20, fill='white')
+            draw = ImageDraw.Draw(img_save)
+            draw.text((20, 2), 'orig', col)
+            draw.text((20 + 64, 2), 'trans', col)
+            draw.text((20 + 64*(n_class), 2), 'top {} recommendations'.format(n), col)
+            for i, sim in enumerate(similar_ix):
+                draw.text((64*(i+n_class)+20, 88), '({} {})'.format(ixs[i], round(scores[i], 3)), col)
         img_save.save(os.path.join(path, filename))
 
     return img_out
 
 
-def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
+def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None, labs=True):
     """Plot top n recommendations for each category individually."""
     similar_ix.reverse()
     ixs = [e[0] for e in similar_ix]
@@ -228,27 +229,28 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None):
         filename = str(img_ix) + src_style + '.jpg'
 
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
-        img_save = ImageOps.expand(img_save, border=20, fill='white')
-        draw = ImageDraw.Draw(img_save)
-        draw.text((20, 2), 'orig', col)
-        draw.text((20 + 64, 2), 'trans', col)
-        draw.text((20 + 64*2, 2), 'top {} recommendations'.format(n), col)
-        for i, sim in enumerate(similar_ix):
-            draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
+        if labs:
+            img_save = ImageOps.expand(img_save, border=20, fill='white')
+            draw = ImageDraw.Draw(img_save)
+            draw.text((20, 2), 'orig', col)
+            draw.text((20 + 64, 2), 'trans', col)
+            draw.text((20 + 64*2, 2), 'top {} recommendations'.format(n), col)
+            for i, sim in enumerate(similar_ix):
+                draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
         img_save.save(os.path.join(path, filename))
 
     return img_out
 
 
-def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None):
+def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None, labs=True):
     """plot_outputs for array of source images."""
     out = []
     for i in similar_ixs:
-        out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path))
+        out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path, labs))
     return out
 
 
-def plot_random(ixs, img_paths_A, img_paths_B, img_size, path=None):
+def plot_random(ixs, img_paths_A, img_paths_B, img_size, path=None, labs=True):
     """Plot top n recommendations for each category individually."""
     img_A = read_image(img_paths_A, img_size).transpose(1, 2, 0)
     img_fill = np.ones_like(img_A)
@@ -261,22 +263,23 @@ def plot_random(ixs, img_paths_A, img_paths_B, img_size, path=None):
         n = len(ixs)
 
         img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
-        img_save = ImageOps.expand(img_save, border=20, fill='white')
-        draw = ImageDraw.Draw(img_save)
-        draw.text((20, 2), 'orig', col)
-        draw.text((20 + 64, 2), 'trans', col)
-        draw.text((20 + 64*2, 2), '{} random recommendations'.format(n), col)
+        if labs:
+            img_save = ImageOps.expand(img_save, border=20, fill='white')
+            draw = ImageDraw.Draw(img_save)
+            draw.text((20, 2), 'orig', col)
+            draw.text((20 + 64, 2), 'trans', col)
+            draw.text((20 + 64*2, 2), '{} random recommendations'.format(n), col)
         img_save.save(path)
 
     return img_out
 
 
-def plot_all_random(ixs, img_paths_A, img_paths_B, img_size, src_style='A', path=None):
+def plot_all_random(ixs, img_paths_A, img_paths_B, img_size, src_style='A', path=None, labs=True):
     """plot_outputs for array of source images."""
     out = []
     path_ = path
     for i in ixs:
         if path:
             path_ = os.path.join(path, str(i) + src_style + '.jpg')
-        out.append(plot_random(ixs[i], img_paths_A[i], img_paths_B, img_size, path_))
+        out.append(plot_random(ixs[i], img_paths_A[i], img_paths_B, img_size, path_, labs))
     return out
