@@ -329,7 +329,7 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     #                     path=os.path.join(paths['topn'], domain[a], 'vgg'))
 
 
-def eval_random(topn, domain, paths):
+def eval_random(img_size, topn, domain, paths):
     """TODO."""
 
     d_nm = domain
@@ -520,7 +520,8 @@ def main(args):
                                 enc_img_size=enc_input_size)
     elif args.eval_task == 'random':
         random.seed(args.seed)
-        eval_random(topn=args.topn,
+        eval_random(img_size=args.image_size,
+                    topn=args.topn,
                     domain=args.domain,
                     paths=paths)
     else:
