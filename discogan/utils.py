@@ -19,7 +19,7 @@ from torch.autograd import Variable
 
 from PIL import Image, ImageOps, ImageDraw  # ImageFont
 
-from data_utils import as_np
+from data_utils import as_np, read_image
 
 
 def torch_cuda(x, cuda):
@@ -245,4 +245,38 @@ def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None):
     out = []
     for i in similar_ixs:
         out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path))
+    return out
+
+
+def plot_random(ixs, img_paths_A, img_paths_B, img_size, path=None):
+    """Plot top n recommendations for each category individually."""
+    img_A = read_image(img_paths_A, img_size).transpose(1, 2, 0)
+    img_fill = np.ones_like(img_A)
+    imgs_B = [read_image(img_paths_B[i]).transpose(1, 2, 0) for i in ixs]
+
+    img_out = np.hstack((img_A, img_fill, *imgs_B))
+
+    if path:
+        col = (0, 0, 0)
+        n = len(ixs)
+
+        img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
+        img_save = ImageOps.expand(img_save, border=20, fill='white')
+        draw = ImageDraw.Draw(img_save)
+        draw.text((20, 2), 'orig', col)
+        draw.text((20 + 64, 2), 'trans', col)
+        draw.text((20 + 64*2, 2), '{} random recommendations'.format(n), col)
+        img_save.save(path)
+
+    return img_out
+
+
+def plot_all_random(ixs, img_paths_A, img_paths_B, img_size, src_style='A', path=None):
+    """plot_outputs for array of source images."""
+    out = []
+    path_ = path
+    for i in ixs:
+        if path:
+            path_ = os.path.join(path, str(i) + src_style + '.jpg')
+        out.append(plot_random(ixs[i], img_paths_A[i], img_paths_B, img_size, path_))
     return out
