@@ -32,6 +32,7 @@ parser.add_argument('--image_size', type=int, default=64, help='Original input i
 
 def trim_border(img):
     """Trim border."""
+    # TODO(lpupp) Crop is an ugly function...
     w, h = img.size
     if h > args.image_size:
         img = img.crop((0, 20, w, h-20))
@@ -42,21 +43,26 @@ def trim_border(img):
 
 def drop_src_image(img):
     """Remove original image."""
-    #w, h = img.size
-    # TODO(lpupp) does this work?
     draw = ImageDraw.Draw(img)
-    draw.rectangle([(0, 0), (args.image_size, args.image_size)],
-                   fill=(255, 255, 255)) # TODO(lpupp) is this white?
-    return img#.crop((args.image_size, 0, w, h))
+    draw.rectangle([(20, 0), (20+args.image_size*2, 20+args.image_size)],
+                   fill=(255, 255, 255))
+    return img
+
+
+def remove_scores(img):
+    """Remove original image."""
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([(20+args.image_size*2, 20+args.image_size),
+                    (20+args.image_size*7, 40+args.image_size)],
+                   fill=(255, 255, 255))
+    return img
 
 
 domain_d = {'furniture': ['seating', 'tables', 'storage'],
             'fashion': ['handbags', 'shoes', 'belts', 'dresses']}
 
 
-def main():
-    # TODO(lpupp) do I need to pass in args is they're global?
-    # otherwise: def main(args):
+def main(args):
     task = args.task
     domain = args.domain
     if task:
@@ -87,19 +93,21 @@ def main():
         # Unique image names from tsk_img_paths
         img_nms = list(set([os.path.split(e)[1] for e in tsk_img_paths]))
         # Image paths grouped by image name
-        grouped_imgs = dict((nm, [e for e in tsk_img_paths if nm in e]) for nm in img_nms)
+        grouped_imgs = dict((nm, [e for e in tsk_img_paths if '\\'+nm in e]) for nm in img_nms)
 
         for k, v in grouped_imgs.items():
+            print(k)
             imgs = []
             for i, pth in enumerate(v):
                 # otherwise: img = cv2.imread(pth)
                 img = Image.open(pth)
                 if img is not None:
-                    img = trim_border(img)
+                    #img = trim_border(img)
+                    img = remove_scores(img)
                     if i != 0:
                         img = drop_src_image(img)
 
-                    img = ImageOps.expand(img, border=5, fill='white')
+                    #img = ImageOps.expand(img, border=2, fill=(255, 255, 255))
                     imgs.append(img)
 
             if len(imgs) > 0:
@@ -118,7 +126,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     eval_dirs = [args.model_arch + str(args.image_size) + '_out',
-                 args.model_arch + str(args.image_size) + '_out',
+                 args.model_arch + str(args.image_size) + '_in',
                  args.model_arch + str(args.image_size) + '_out_narrow',
                  args.model_arch + str(args.image_size) + '_in_narrow',
                  'vgg_out',
