@@ -209,7 +209,7 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
 
 
 def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, paths, enc_img_size):
-    """TODO."""
+    """Evaluate the RecSys by generating recs on out-sample from in-sample."""
 
     d_nm = domain
     domain_set = domain_d[d_nm]
@@ -306,7 +306,10 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     # For each translation (AB and BA) find top n similarity (in B and A resp.)
     sim_disco, sim_vgg = {}, {}
     for ab in label_perms:
+        print(ab)
+        t_start = time.time()
         sim_disco[ab] = find_top_n_similar(imgs_enc[ab], all_imgs_enc[ab[1]], n=topn)
+        print('time {}', time.time() - t_start)
 
     # TODO(lpupp) We don't need this comparison... do we?
     #print('Using pretrained {}'.format(args.embedding_encoder))
@@ -324,10 +327,10 @@ def eval_full_domain_set_in(cuda, encoder, model_arch, img_size, topn, domain, p
     for ab in label_perms:
         print(ab)
         a, b = ab[0], ab[1]
-        plot_all_outputs(sim_disco[ab],
-                         [imgs_np[a], imgs_np[ab], imgs_np[b]],
-                         src_style=str(ab),
-                         path=os.path.join(paths['topn'], domain[a], model_arch + '_in'))
+        plot_all_outputs_in(sim_disco[ab],
+                           [imgs_np[a], imgs_np[ab], all_img_paths[b]],
+                           src_style=str(ab),
+                           path=os.path.join(paths['topn'], domain[a], model_arch + '_in'))
 
     # Plot top n similar using VGG results
     #for ab in sim_vgg:
@@ -502,6 +505,7 @@ def main(args):
         if args.image_path:
             if args.image_class not in domain_d[args.domain]:
                 raise ValueError
+            print('single image eval')
             eval_single_image(img_class=args.image_class,
                               img_size=args.image_size,
                               topn=args.topn,
@@ -514,6 +518,7 @@ def main(args):
         else:
             raise ValueError
     elif args.eval_task == 'out':
+        print('out-of-sample eval')
         eval_full_domain_set_out(cuda=cuda,
                                  encoder=embedding_encoder,
                                  model_arch=model_arch,
@@ -523,6 +528,7 @@ def main(args):
                                  paths=paths,
                                  enc_img_size=enc_input_size)
     elif args.eval_task == 'in':
+        print('in-sample eval')
         eval_full_domain_set_in(cuda=cuda,
                                 encoder=embedding_encoder,
                                 model_arch=model_arch,
@@ -532,6 +538,7 @@ def main(args):
                                 paths=paths,
                                 enc_img_size=enc_input_size)
     elif args.eval_task == 'random':
+        print('random eval')
         random.seed(args.seed)
         eval_random(img_size=args.image_size,
                     topn=args.topn,

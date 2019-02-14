@@ -245,8 +245,53 @@ def plot_outputs(img_ix, similar_ix, imgs, src_style='A', path=None, labs=True):
 def plot_all_outputs(similar_ixs, imgs, src_style='A', path=None, labs=True):
     """plot_outputs for array of source images."""
     out = []
-    for i in similar_ixs:
-        out.append(plot_outputs(i, similar_ixs[i], imgs, src_style, path, labs))
+    for k, v in similar_ixs.items():
+        out.append(plot_outputs(k, v, imgs, src_style, path, labs))
+    return out
+
+
+def plot_outputs_in(img_ix, similar_ix, imgs, src_style='A', path=None, labs=True):
+    """Plot top n recommendations for each category individually."""
+    similar_ix.reverse()
+    ixs = [e[0] for e in similar_ix]
+    scores = [e[1] for e in similar_ix]
+
+    if len(imgs) == 3:
+        orig, trans, comp = imgs
+    else:
+        raise ValueError
+
+    img_orig = orig[img_ix].transpose(1, 2, 0)
+    img_tran = trans[img_ix].transpose(1, 2, 0)
+    imgs_comp = [cv2.imread(comp[i]) for i in ixs]
+    imgs_comp = [cv2.resize(img, (64, 64)) for img in imgs_comp]
+
+    img_out = np.hstack((img_orig, img_tran, *imgs_comp))
+
+    if path:
+        col = (0, 0, 0)
+        n = len(scores)
+        filename = str(img_ix) + src_style + '.jpg'
+
+        img_save = Image.fromarray((img_out * 255.).astype(np.uint8))
+        if labs:
+            img_save = ImageOps.expand(img_save, border=20, fill='white')
+            draw = ImageDraw.Draw(img_save)
+            draw.text((20, 2), 'orig', col)
+            draw.text((20 + 64, 2), 'trans', col)
+            draw.text((20 + 64*2, 2), 'top {} recommendations'.format(n), col)
+            for i, sim in enumerate(similar_ix):
+                draw.text((64*(i+2)+20, 88), '({} {})'.format(sim[0], round(sim[1], 3)), col)
+        img_save.save(os.path.join(path, filename))
+
+    return img_out
+
+
+def plot_all_outputs_in(similar_ixs, imgs, src_style='A', path=None, labs=True):
+    """plot_outputs for array of source images."""
+    out = []
+    for k, v in similar_ixs.items():
+        out.append(plot_outputs_in(k, v, imgs, src_style, path, labs))
     return out
 
 
