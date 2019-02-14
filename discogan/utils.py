@@ -264,7 +264,8 @@ def plot_outputs_in(img_ix, similar_ix, imgs, src_style='A', path=None, labs=Tru
     img_orig = orig[img_ix].transpose(1, 2, 0)
     img_tran = trans[img_ix].transpose(1, 2, 0)
     imgs_comp = [cv2.imread(comp[i]) for i in ixs]
-    imgs_comp = [cv2.resize(img, (64, 64)) for img in imgs_comp]
+    # TODO(lpupp) redundant calculation
+    imgs_comp = [cv2.resize(img, (64, 64)).astype(np.float32) / 255. for img in imgs_comp]
 
     img_out = np.hstack((img_orig, img_tran, *imgs_comp))
 
