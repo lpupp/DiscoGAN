@@ -22,7 +22,6 @@
 #python ./discogan/image_translation.py --task_name=dresses2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
 #python ./discogan/image_translation.py --task_name=shoes2dresses --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
 
-
 # Run furniture
 #python ./discogan/image_translation.py --task_name=tables2seating --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
 #python ./discogan/image_translation.py --task_name=seating2storage --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
@@ -44,3 +43,7 @@ python discogan/inference_evaluation.py --domain furniture --eval_task in --cuda
 # Run eval (random)
 #python discogan/inference_evaluation.py --eval_task random
 #python discogan/inference_evaluation.py --domain furniture --eval_task random
+
+# Merging output images --------------------------------
+# Test merging
+python discogan/summarize_imgs.py --task shoes
