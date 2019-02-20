@@ -53,7 +53,7 @@ def remove_scores(img):
     """Remove original image."""
     draw = ImageDraw.Draw(img)
     draw.rectangle([(20+args.image_size*2, 20+args.image_size),
-                    (20+args.image_size*7, 40+args.image_size)],
+                    (40+args.image_size*7, 40+args.image_size)],
                    fill=(255, 255, 255))
     return img
 
