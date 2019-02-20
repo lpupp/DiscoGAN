@@ -15,12 +15,12 @@
 
 # Training ---------------------------------------------
 # Run fashion
-#python ./discogan/image_translation.py --task_name=handbags2belts --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
-#python ./discogan/image_translation.py --task_name=belts2shoes --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
-#python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
-#python ./discogan/image_translation.py --task_name=dresses2belts --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
-#python ./discogan/image_translation.py --task_name=dresses2handbags --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
-#python ./discogan/image_translation.py --task_name=shoes2dresses --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=handbags2belts --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=belts2shoes --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=shoes2handbags --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=dresses2belts --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=dresses2handbags --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
+#python ./discogan/image_translation.py --task_name=shoes2dresses --starting_rate=0.5 --batch_size=256 --model_save_interval 1000 --epoch_size 1000 --cuda
 
 # Run furniture
 #python ./discogan/image_translation.py --task_name=tables2seating --starting_rate=0.5 --batch_size=256 --cuda=true --model_save_interval 1000 --epoch_size 1000 --cuda
