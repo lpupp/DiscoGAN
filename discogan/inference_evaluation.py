@@ -13,11 +13,19 @@ from model import *
 from utils import *
 from data_utils import *
 
+# TODO
+# [ ] plot output images in higher dimension... is this possible since discogan
+#     was trained on 64x64?
+# [ ]
+# [ ]
+
+
 def add_bool_arg(parser, name, default=False):
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--' + name, dest=name, action='store_true')
     group.add_argument('--no_' + name, dest=name, action='store_false')
     parser.set_defaults(**{name: default})
+
 
 parser = argparse.ArgumentParser(description='PyTorch implementation of DiscoGAN')
 add_bool_arg(parser, 'cuda')
@@ -92,7 +100,6 @@ def eval_full_domain_set_out(cuda, encoder, model_arch, img_size, topn, domain, 
     - Plot everything.
 
     TODO(lpupp)
-    [ ] Load model ix. Recommendation is to put the final models in './final_models/'
     [ ] Do real-world run through with a zalando image. Compare our output with
         their output. This would require a harvesting of the zalando database
         for a (at least) a few products...
