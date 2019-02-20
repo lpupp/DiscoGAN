@@ -131,6 +131,6 @@ if __name__ == '__main__':
     elif type == 'filter':
         filter_white_background(dataset)
     elif type == 'sample':
-        train_val_sample(dataset, n_val=dim or 400)
+        train_val_sample(dataset, n_val=dim or 1000)
     else:
         raise NotImplementedError
